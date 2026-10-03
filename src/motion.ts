@@ -27,11 +27,14 @@ export function initMotion(): void {
 
   void typeTerminal();
 
-  gsap.set(".reveal", { autoAlpha: 0, y: 48 });
+  // opacity, not autoAlpha: blocks waiting to reveal stay focusable for keyboard and screen readers
+  gsap.set(".reveal", { opacity: 0, y: 48 });
   ScrollTrigger.batch(".reveal", {
-    start: "top 88%",
+    start: "clamp(top 88%)", // clamp so the last blocks still fire on very tall viewports
     once: true,
-    onEnter: (els) => gsap.to(els, { autoAlpha: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" }),
+    batchMax: 4,
+    onEnter: (els) =>
+      gsap.to(els, { opacity: 1, y: 0, duration: 0.8, stagger: 0.1, ease: "power3.out", clearProps: "transform" }),
   });
 
   document.querySelectorAll<HTMLElement>(".stat__value").forEach((el) => {
