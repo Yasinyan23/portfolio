@@ -92,6 +92,7 @@ export const projects: Project[] = [
     metrics: [
       { value: "<3 min", label: "from video upload to athlete insights" },
       { value: "34", label: "biomechanics metrics per gait cycle" },
+      { value: "340", label: "values stored per gait cycle" },
     ],
     stack: ["Computer Vision", "PyTorch", "Deep Learning", "3D Human Motion Reconstruction", "Model Evaluation"],
     links: [],
@@ -108,6 +109,8 @@ export const projects: Project[] = [
     ],
     metrics: [
       { value: "−52%", label: "manual-review handling time" },
+      { value: "20", label: "internal services wired to the agent" },
+      { value: "20 s", label: "per recommendation, down from 2.5 min" },
     ],
     stack: ["AI Agents", "Tool Calling", "MCP", "LLM Engineering", "Prompt Engineering", "API Integration"],
     links: [],
@@ -163,7 +166,7 @@ export const projects: Project[] = [
     ],
     metrics: [
       { value: "+30–40%", label: "inference throughput" },
-      { value: "0", label: "mismatches against legacy metrics" },
+      { value: "100%", label: "match with legacy metrics on production data" },
       { value: "20M+", label: "metric samples in PostgreSQL" },
     ],
     stack: ["Inference Optimization", "Model Evaluation", "Performance Optimization", "PostgreSQL", "AI Quality Assurance"],
@@ -200,8 +203,8 @@ export const projects: Project[] = [
     ],
     metrics: [
       { value: "160", label: "tests passing" },
-      { value: "6", label: "document formats" },
-      { value: "0", label: "LLM calls on a refusal" },
+      { value: "~4 s", label: "end-to-end answer time" },
+      { value: "−40%", label: "prompt tokens via context budget" },
     ],
     stack: ["Python", "FastAPI", "ChromaDB", "OpenAI", "SSE", "Docker"],
     links: [{ label: "Code", href: "https://github.com/Yasinyan23/rag-agent" }],
@@ -219,8 +222,8 @@ export const projects: Project[] = [
     ],
     metrics: [
       { value: "3", label: "AI providers behind one interface" },
-      { value: "5", label: "strikes to a permanent flag" },
-      { value: "0", label: "tokens spent on flagged users" },
+      { value: "0.3 s", label: "to moderate one message" },
+      { value: "60k", label: "messages per minute" },
     ],
     stack: ["Python", "FastAPI", "SQLAlchemy", "PostgreSQL", "Docker", "Claude", "Gemini"],
     links: [{ label: "Code", href: "https://github.com/Yasinyan23/ai-moderation-api" }],
