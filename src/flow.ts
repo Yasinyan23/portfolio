@@ -152,7 +152,9 @@ const MODES: Mode[] = [
 
 const TOKENS_PER_MS = 8; // per busy agent
 const PRICE: Record<Tier, number> = { S: 1e-6, L: 6e-6 }; // $ per token
-const HOLD_MS = 1100; // pause on the result before the next level
+const HOLD_MS = 1400; // pause on the result before the next level (scripted time)
+const SPEED = 1.4; // the whole run plays this much faster than the scripted timings
+const FLOW_MS = 1600; // one lap of the ambient particle on each link
 const ABORT = Symbol("abort");
 
 const NS = "http://www.w3.org/2000/svg";
@@ -218,9 +220,12 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
   let visible = false;
   let sparkAt = 0;
   const waiters: { t: number; resolve: () => void }[] = [];
-  type Dot = { path: SVGPathElement; len: number; start: number; dur: number; el: SVGCircleElement; reverse: boolean; done?: () => void; hot: boolean };
+  type Dot = { path: SVGPathElement; len: number; start: number; dur: number; el: SVGCircleElement; reverse: boolean; tone: string; done?: () => void; hot: boolean };
   let dots: Dot[] = [];
   let sparks: { el: SVGCircleElement; x: number; y: number; born: number }[] = [];
+  let ripples: { el: SVGCircleElement; born: number }[] = [];
+  let flows: { path: SVGPathElement; len: number; el: SVGCircleElement; phase: number }[] = [];
+  let qAnim: { to: number; start: number } | null = null;
 
   const counters = () => {
     tokEl.textContent = fmt(tokens);
@@ -228,7 +233,7 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
   };
 
   const tick = (now: number) => {
-    const dt = Math.min(now - last, 50);
+    const dt = Math.min(now - last, 50) * SPEED;
     last = now;
     clock += dt;
     for (const id of busy) {
@@ -249,17 +254,47 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
       if (k < 1) return true;
       d.el.remove();
       if (d.hot) d.path.classList.remove("is-hot");
-      d.done?.();
+      if (d.done) {
+        // ripple where the lead packet lands
+        const el = svgEl("circle", { cx: p.x, cy: p.y, r: 3, class: `ripple${d.tone ? ` ripple--${d.tone}` : ""}` });
+        gFx.append(el);
+        ripples.push({ el, born: clock });
+        d.done();
+      }
       return false;
     });
 
+    // ambient data flow: one faint particle laps every visible link
+    for (const f of flows) {
+      const p = f.path.getPointAtLength((f.len * ((clock + f.phase) % FLOW_MS)) / FLOW_MS);
+      f.el.setAttribute("cx", String(p.x));
+      f.el.setAttribute("cy", String(p.y));
+    }
+
+    ripples = ripples.filter((r) => {
+      const a = (clock - r.born) / 450;
+      if (a >= 1) {
+        r.el.remove();
+        return false;
+      }
+      r.el.setAttribute("r", String(3 + a * 14));
+      r.el.style.opacity = String(0.8 * (1 - a));
+      return true;
+    });
+
+    if (qAnim) {
+      const k = Math.min(1, (clock - qAnim.start) / 500);
+      qEl.textContent = `${Math.round(qAnim.to * k)}%`;
+      if (k >= 1) qAnim = null;
+    }
+
     // sparks rising off busy agents
-    if (clock - sparkAt > 45 && busy.size && sparks.length < 70) {
+    if (clock - sparkAt > 30 && busy.size && sparks.length < 110) {
       sparkAt = clock;
       for (const id of busy) {
         const s = specs[id];
         if (!s || s.kind === "tool") continue;
-        const el = svgEl("circle", { r: 1.6, class: "spark" });
+        const el = svgEl("circle", { r: 1.4 + Math.random(), class: `spark spark--${s.tier ?? "S"}` });
         gFx.append(el);
         sparks.push({ el, x: s.x + 10 + Math.random() * (s.w - 20), y: s.y, born: clock });
       }
@@ -270,8 +305,8 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
         s.el.remove();
         return false;
       }
-      s.el.setAttribute("cx", String(s.x));
-      s.el.setAttribute("cy", String(s.y - age * 18));
+      s.el.setAttribute("cx", String(s.x + Math.sin(age * 9 + s.born) * 2));
+      s.el.setAttribute("cy", String(s.y - age * 22));
       s.el.style.opacity = String(1 - age);
       return true;
     });
@@ -284,21 +319,33 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
   // ---- build one level's graph; nodes pop in with a stagger (CSS) ----
   function build(m: number) {
     const mode = MODES[m];
-    for (const d of dots) d.el.remove();
-    for (const s of sparks) s.el.remove();
+    for (const x of [...dots, ...sparks, ...ripples]) x.el.remove();
     dots = [];
     sparks = [];
+    ripples = [];
+    flows = [];
+    qAnim = null;
     busy.clear();
     gEdges.replaceChildren();
     gNodes.replaceChildren();
     specs = Object.fromEntries(mode.nodes.map((s) => [s.id, s]));
     edges = {};
     nodes = {};
-    for (const [a, b, kind] of mode.edges) {
+    mode.edges.forEach(([a, b, kind], i) => {
       const path = svgEl("path", { d: edgePath(specs[a], specs[b], kind), class: kind === "fix" ? "edge edge--fix" : "edge" });
       gEdges.append(path);
       edges[`${a}-${b}`] = path;
-    }
+      if (kind === "fix" || reduce) return;
+      // links draw themselves in, then carry a faint particle forever
+      const len = path.getTotalLength();
+      path.style.strokeDasharray = String(len);
+      path.style.strokeDashoffset = String(len);
+      path.style.transition = `stroke-dashoffset 0.45s ease ${60 + i * 35}ms, stroke 0.3s`;
+      requestAnimationFrame(() => (path.style.strokeDashoffset = "0"));
+      const el = svgEl("circle", { r: 1.7, class: "flow-dot" });
+      gEdges.append(el);
+      flows.push({ path, len, el, phase: Math.random() * FLOW_MS });
+    });
     mode.nodes.forEach((s, i) => {
       const h = s.h ?? H;
       const g = svgEl("g", { class: `node${s.kind ? ` node--${s.kind}` : ""}`, style: `--i: ${i}` });
@@ -353,7 +400,7 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
         setState("task", "busy", "› ");
         if (!instant)
           for (let i = 1; i <= title.length; i++) {
-            if (nodes.task.sub) nodes.task.sub.textContent = `› ${title.slice(0, i)}`;
+            if (nodes.task.sub) nodes.task.sub.textContent = `› ${title.slice(0, i)}▍`;
             await guard(wait(10));
           }
         setState("task", "done", `› ${title}`);
@@ -366,11 +413,12 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
         const cls = opts.fix ? "pkt pkt--fix" : opts.tier ? `pkt pkt--${opts.tier}` : "pkt";
         return guard(
           new Promise<void>((done) => {
-            // a comet: lead packet + two fading followers
-            [0, 1, 2].forEach((k) => {
-              const el = svgEl("circle", { r: 4.5 - k * 1.2, class: cls, style: `opacity: 0; --fade: ${1 - k * 0.3}` });
+            // a comet: lead packet + three fading followers
+            const tone = opts.fix ? "fix" : (opts.tier ?? "");
+            [0, 1, 2, 3].forEach((k) => {
+              const el = svgEl("circle", { r: 4.6 - k, class: cls, style: `opacity: 0; --fade: ${1 - k * 0.22}` });
               gFx.append(el);
-              dots.push({ path, len, start: clock + k * 45, dur, el, reverse: !!opts.reverse, hot: k === 2, done: k === 0 ? done : undefined });
+              dots.push({ path, len, start: clock + k * 38, dur, el, reverse: !!opts.reverse, tone, hot: k === 3, done: k === 0 ? done : undefined });
             });
           }),
         );
@@ -401,8 +449,11 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
     try {
       await mode.script(makeRun(my, instant));
       fill.style.width = `${mode.quality}%`;
-      qEl.textContent = `${mode.quality}%`;
-      if (instant) return;
+      if (instant) {
+        qEl.textContent = `${mode.quality}%`;
+        return;
+      }
+      qAnim = { to: mode.quality, start: clock };
       await wait(HOLD_MS);
       if (my === gen) void start((m + 1) % MODES.length);
     } catch (e) {

@@ -1854,7 +1854,7 @@ body::before {
   }
 }
 
-.edge {
+.edge--fix {
   animation: edge-in 0.5s ease both;
 }
 
@@ -1904,6 +1904,108 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .node,
   .edge {
+    animation: none;
+  }
+}
+
+/* ---------- flow: more motion ---------- */
+
+.flow-dot {
+  fill: #2de2c0;
+  opacity: 0.35;
+}
+
+.ripple {
+  fill: none;
+  stroke: #2de2c0;
+  stroke-width: 1.5;
+}
+
+.ripple--L {
+  stroke: #9b84ff;
+}
+
+.ripple--fix {
+  stroke: #ffb547;
+}
+
+.spark--L {
+  fill: #9b84ff;
+}
+
+.node.is-busy rect {
+  animation: busy-pulse 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes busy-pulse {
+  to {
+    stroke-width: 2.4;
+    filter: drop-shadow(0 0 8px rgba(45, 226, 192, 0.55));
+  }
+}
+
+.node__check {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.node.is-done .node__check {
+  animation: check-pop 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.6) both;
+}
+
+@keyframes check-pop {
+  from {
+    transform: scale(0);
+  }
+}
+
+/* errors shake: on the children, so the node's own pop-in never replays */
+.node.is-warn > *,
+.node.is-fail > * {
+  animation: shake 0.4s ease both;
+}
+
+/* `translate`, not `transform`: phones offset node labels with transform */
+@keyframes shake {
+  20% {
+    translate: -3px 0;
+  }
+  40% {
+    translate: 3px 0;
+  }
+  60% {
+    translate: -2px 0;
+  }
+  80% {
+    translate: 2px 0;
+  }
+}
+
+/* slow light sweep across the card */
+.flow::after {
+  content: "";
+  position: absolute;
+  inset: -40% -60%;
+  background: linear-gradient(105deg, transparent 45%, rgba(255, 255, 255, 0.045) 50%, transparent 55%);
+  animation: sweep 6s ease-in-out infinite;
+  pointer-events: none;
+}
+
+@keyframes sweep {
+  from {
+    transform: translateX(-40%);
+  }
+  to {
+    transform: translateX(40%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .node.is-busy rect,
+  .node.is-done .node__check,
+  .node.is-warn > *,
+  .node.is-fail > *,
+  .flow::after {
     animation: none;
   }
 }
