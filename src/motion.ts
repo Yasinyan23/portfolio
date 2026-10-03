@@ -4,9 +4,55 @@ import { formatStat } from "./render";
 
 gsap.registerPlugin(ScrollTrigger);
 
-const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const GLYPHS = "!<>-_/[]{}=+*^?#01";
 
-export function initMotion(): void {
+// words appear like streamed LLM tokens: blurred, irregular timing, a caret while streaming
+function streamTokens(h: HTMLElement): void {
+  h.innerHTML = (h.textContent ?? "")
+    .split(" ")
+    .map((w) => `<span class="tok">${w.replace(/&/g, "&amp;").replace(/</g, "&lt;")}</span>`)
+    .join(" ");
+  const toks = h.querySelectorAll(".tok");
+  gsap.set(toks, { opacity: 0, filter: "blur(8px)", y: 6 });
+  ScrollTrigger.create({
+    trigger: h,
+    start: "clamp(top 88%)",
+    once: true,
+    onEnter: () => {
+      h.classList.add("streaming");
+      gsap.to(toks, {
+        opacity: 1,
+        filter: "blur(0px)",
+        y: 0,
+        duration: 0.45,
+        ease: "power2.out",
+        stagger: (i) => i * 0.09 + Math.random() * 0.08,
+        onComplete: () => void setTimeout(() => h.classList.remove("streaming"), 700),
+      });
+    },
+  });
+}
+
+// characters resolve left to right out of random glyphs
+function scramble(el: HTMLElement, duration = 0.8): void {
+  const text = el.textContent ?? "";
+  el.setAttribute("aria-label", text);
+  const state = { p: 0 };
+  gsap.to(state, {
+    p: 1,
+    duration,
+    ease: "power1.inOut",
+    onUpdate: () => {
+      const done = Math.floor(state.p * text.length);
+      el.textContent = [...text]
+        .map((ch, i) => (i < done || ch === " " ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0]))
+        .join("");
+    },
+    onComplete: () => void (el.textContent = text),
+  });
+}
+
+export function initMotion(reduce: boolean): void {
   // card spotlight follows the cursor; not movement, so it stays on with reduced motion
   document.querySelectorAll<HTMLElement>(".card").forEach((card) =>
     card.addEventListener("pointermove", (e) => {
@@ -16,16 +62,33 @@ export function initMotion(): void {
     }),
   );
 
-  if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  if (reduce) return;
 
   gsap
     .timeline({ defaults: { ease: "power4.out" } })
     .from(".hero__role", { y: 20, autoAlpha: 0, duration: 0.6 })
     .from(".hero__title .word", { yPercent: 100, autoAlpha: 0, rotate: 3, duration: 0.9, stagger: 0.07 }, "-=0.3")
     .from([".hero__intro", ".hero__cta"], { y: 24, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
-    .from(".term", { y: 40, autoAlpha: 0, duration: 0.9 }, "-=0.6");
+    .from(".viz", { scale: 0.92, autoAlpha: 0, duration: 1.1 }, "-=0.9");
 
-  void typeTerminal();
+  // section headings alternate between two entrances so no two neighbours feel the same
+  document.querySelectorAll<HTMLElement>("h2.stream").forEach((h, i) => {
+    if (i % 2 === 0) return streamTokens(h);
+    gsap.set(h, { opacity: 0 });
+    ScrollTrigger.create({
+      trigger: h,
+      start: "clamp(top 88%)",
+      once: true,
+      onEnter: () => {
+        gsap.to(h, { opacity: 1, duration: 0.2 });
+        scramble(h, 0.9);
+      },
+    });
+  });
+
+  document.querySelectorAll<HTMLElement>(".card h3").forEach((h) =>
+    ScrollTrigger.create({ trigger: h, start: "clamp(top 85%)", once: true, onEnter: () => scramble(h, 0.7) }),
+  );
 
   // opacity, not autoAlpha: blocks waiting to reveal stay focusable for keyboard and screen readers
   gsap.set(".reveal", { opacity: 0, y: 48 });
@@ -57,26 +120,4 @@ export function initMotion(): void {
     ease: "none",
     scrollTrigger: { trigger: ".timeline", start: "top 75%", end: "bottom 65%", scrub: true },
   });
-}
-
-// types the terminal card line by line; commands char by char, output at once
-async function typeTerminal(): Promise<void> {
-  const lines = Array.from(document.querySelectorAll<HTMLElement>(".term__line"));
-  const texts = lines.map((line) => line.textContent ?? "");
-  lines.forEach((line) => (line.textContent = ""));
-  await sleep(1600);
-  for (const [i, line] of lines.entries()) {
-    lines.forEach((l) => l.classList.toggle("term__line--caret", l === line));
-    const text = texts[i];
-    if (text.startsWith("$ ")) {
-      for (let n = 1; n <= text.length; n++) {
-        line.textContent = text.slice(0, n);
-        await sleep(45);
-      }
-      await sleep(300);
-    } else {
-      line.textContent = text;
-      await sleep(180);
-    }
-  }
 }

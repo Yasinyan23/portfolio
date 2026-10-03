@@ -1,10 +1,37 @@
 import { jobs, profile, projects, stack, stats } from "./content";
+import type { Project } from "./content";
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ENTITIES[c]);
 
 const ext = (href: string, label: string, icon = "") =>
   `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}${icon ? ` <span aria-hidden="true">${icon}</span>` : ""}</a>`;
+
+const metricsHTML = (p: Project) =>
+  p.metrics
+    .map((m) => `<li><span class="metric__value">${esc(m.value)}</span><span class="metric__label">${esc(m.label)}</span></li>`)
+    .join("");
+
+const sideHTML = (p: Project) => `
+  <p class="card__label">What I did</p>
+  <ul class="highlights">${p.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
+  <ul class="tags">${p.stack.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
+  ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, l.label, "↗")).join("")}</p>` : ""}`;
+
+// full-screen case study (dialog body); prev/next buttons carry data-case
+export const caseHTML = (p: Project, i: number, total: number) => `
+  <p class="card__org">${esc(p.org)}</p>
+  <h2 class="case__title" id="case-title">${esc(p.title)}</h2>
+  <p class="case__summary">${esc(p.summary)}</p>
+  <ul class="metrics metrics--big">${metricsHTML(p)}</ul>
+  <div class="case__cols">
+    <div class="case__story">${p.details.map((d) => `<p>${esc(d)}</p>`).join("")}</div>
+    <div>${sideHTML(p)}</div>
+  </div>
+  <p class="case__nav">
+    ${i > 0 ? `<button type="button" class="btn btn--ghost" data-case="${i - 1}">← ${esc(projects[i - 1].title)}</button>` : "<span></span>"}
+    ${i < total - 1 ? `<button type="button" class="btn btn--ghost" data-case="${i + 1}">${esc(projects[i + 1].title)} →</button>` : ""}
+  </p>`;
 
 export const formatStat = (value: number, prefix = "", suffix = "") =>
   `${prefix}${Math.round(value).toLocaleString("en-US")}${suffix}`;
@@ -18,7 +45,9 @@ export function render(root: HTMLElement): void {
       <a href="#experience">Experience</a>
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
-      <a class="nav__cv" href="${esc(profile.cv)}" download>CV <span aria-hidden="true">↓</span></a>
+      <button class="nav__k" type="button" aria-label="Open command palette" data-magnetic><kbd>⌘K</kbd></button>
+      <button class="nav__theme" type="button" data-magnetic></button>
+      <a class="nav__cv" href="${esc(profile.cv)}" download data-magnetic>CV <span aria-hidden="true">↓</span></a>
     </nav>
   </header>
 
@@ -32,18 +61,19 @@ export function render(root: HTMLElement): void {
           .join(" ")}</h1>
         <p class="hero__intro">${esc(profile.intro)}</p>
         <div class="hero__cta">
-          <a class="btn" href="#projects">See my work <span aria-hidden="true">↓</span></a>
-          <a class="btn btn--ghost" href="${esc(profile.cv)}" download>Download CV</a>
+          <a class="btn" href="#projects" data-magnetic>See my work <span aria-hidden="true">↓</span></a>
+          <a class="btn btn--ghost" href="${esc(profile.cv)}" download data-magnetic>Download CV</a>
         </div>
       </div>
-      <pre class="term" aria-hidden="true"><code>${profile.terminal
-        .map((line, i, all) => {
-          const cls = ["term__line"];
-          if (line.startsWith("$ ")) cls.push("term__line--cmd");
-          if (i === all.length - 1) cls.push("term__line--caret");
-          return `<span class="${cls.join(" ")}">${esc(line)}</span>`;
-        })
-        .join("")}</code></pre>
+      <figure class="viz" aria-label="Animated 3D pose estimation of a running athlete">
+        <canvas class="viz__canvas"></canvas>
+        <div class="viz__hud" aria-hidden="true">
+          <span>knee L <b class="hud-knee">—</b></span>
+          <span>phase <b class="hud-phase">—</b></span>
+          <span>keypoints <b>17</b></span>
+        </div>
+        <figcaption>live pose estimation · move the cursor to rotate</figcaption>
+      </figure>
     </section>
 
     <section class="stats">
@@ -66,31 +96,31 @@ export function render(root: HTMLElement): void {
       </ul>
     </div>
 
+    <section id="terminal" class="console">
+      <h2 class="stream">Ask my terminal</h2>
+      <div class="term reveal" data-cursor="Type">
+        <div class="term__out" role="log" aria-live="polite"></div>
+        <label class="term__prompt"><span aria-hidden="true">$</span><input id="term-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command, for example help" placeholder="type help" /></label>
+      </div>
+      <p class="console__hint reveal">Try <kbd>projects</kbd>, <kbd>open 2</kbd>, <kbd>sudo hire-me</kbd> — or press <kbd>⌘K</kbd> anywhere.</p>
+    </section>
+
     <section id="projects">
-      <h2 class="reveal">Selected projects</h2>
+      <h2 class="stream">Selected projects</h2>
       ${projects
         .map(
           (p, i) => `
-        <article class="card reveal">
+        <article class="card reveal" data-cursor="Open">
           <span class="card__num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
           <div class="card__head">
             <p class="card__org">${esc(p.org)}</p>
             <h3>${esc(p.title)}</h3>
             <p class="card__summary">${esc(p.summary)}</p>
-            <ul class="metrics">
-              ${p.metrics
-                .map(
-                  (m) =>
-                    `<li><span class="metric__value">${esc(m.value)}</span><span class="metric__label">${esc(m.label)}</span></li>`,
-                )
-                .join("")}
-            </ul>
+            <ul class="metrics">${metricsHTML(p)}</ul>
           </div>
           <div class="card__body">
-            <p class="card__label">What I did</p>
-            <ul class="highlights">${p.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
-            <ul class="tags">${p.stack.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-            ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, l.label, "↗")).join("")}</p>` : ""}
+            ${sideHTML(p)}
+            <button class="card__open" type="button">Case study <span aria-hidden="true">→</span></button>
           </div>
         </article>`,
         )
@@ -98,7 +128,7 @@ export function render(root: HTMLElement): void {
     </section>
 
     <section id="experience">
-      <h2 class="reveal">Experience</h2>
+      <h2 class="stream">Experience</h2>
       <div class="timeline">
         <span class="timeline__line" aria-hidden="true"></span>
         <ol>
@@ -118,22 +148,36 @@ export function render(root: HTMLElement): void {
     </section>
 
     <section id="about">
-      <h2 class="reveal">About</h2>
-      ${profile.about.map((t) => `<p class="reveal">${esc(t)}</p>`).join("")}
+      <h2 class="stream">About</h2>
+      ${profile.about
+        .map((t) => `<p class="about__text reveal">${t.split(" ").map((w) => `<span class="w">${esc(w)}</span>`).join(" ")}</p>`)
+        .join("")}
+      <p class="about__hint reveal" aria-hidden="true">hover a word · attention head 1 / layer 12</p>
       <ul class="facts">
         ${profile.facts.map((f) => `<li class="reveal"><span>${esc(f.label)}</span>${esc(f.text)}</li>`).join("")}
       </ul>
     </section>
 
     <section id="contact">
-      <h2 class="reveal">Let's talk.</h2>
+      <h2 class="stream">Let's talk.</h2>
       <p class="reveal">${esc(profile.contactNote)}</p>
-      <a class="btn btn--big reveal" href="mailto:${esc(profile.email)}">${esc(profile.email)}</a>
+      <a class="btn btn--big reveal" data-magnetic href="mailto:${esc(profile.email)}">${esc(profile.email)}</a>
       <ul class="socials reveal">
         ${profile.socials.map((s) => `<li>${ext(s.href, s.label)}</li>`).join("")}
       </ul>
     </section>
   </main>
 
-  <footer class="footer">© ${new Date().getFullYear()} ${esc(profile.name)}</footer>`;
+  <footer class="footer">© ${new Date().getFullYear()} ${esc(profile.name)} · press <kbd>⌘K</kbd></footer>
+
+  <dialog class="case" aria-labelledby="case-title">
+    <button class="case__close" type="button" aria-label="Close case study">✕</button>
+    <div class="case__body"></div>
+  </dialog>
+
+  <dialog class="palette" aria-label="Command palette">
+    <input type="text" role="combobox" aria-expanded="true" aria-controls="pal-list" aria-autocomplete="list" placeholder="Search projects, sections, actions…" autocomplete="off" spellcheck="false" />
+    <ul id="pal-list" role="listbox"></ul>
+    <p class="palette__hint">↑↓ move · Enter run · Esc close</p>
+  </dialog>`;
 }
