@@ -108,7 +108,6 @@ export const projects: Project[] = [
     ],
     metrics: [
       { value: "−52%", label: "manual-review handling time" },
-      { value: "100%", label: "of decisions signed off by a human" },
     ],
     stack: ["AI Agents", "Tool Calling", "MCP", "LLM Engineering", "Prompt Engineering", "API Integration"],
     links: [],
