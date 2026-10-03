@@ -77,16 +77,21 @@ export function render(root: HTMLElement): void {
         </div>
         <p class="hero__worked"><span>Worked at</span>${jobs.map((j) => `<b>${esc(j.company)}</b>`).join("")}</p>
       </div>
-      <figure class="flow" aria-label="Animated diagram of a multi-agent AI run: an orchestrator dispatches agents, then review, a fix loop and evals raise the output from junior to staff level">
+      <figure class="flow" data-level="0" aria-label="Animated diagram: the same task run by a junior, mid, senior and staff-level AI agent process; output quality rises from 41% to 97%">
         <div class="flow__hud" aria-hidden="true">
-          <span class="flow__live"><i></i>agent run <b class="flow-run">#1</b></span>
+          <span class="flow__live"><i></i><b class="flow-mode">Junior</b> · run <b class="flow-run">#1</b></span>
           <span>tokens <b class="flow-tokens">0</b> · <b class="flow-cost">$0.00</b></span>
         </div>
         <svg class="flow__svg" viewBox="0 0 480 590" aria-hidden="true"></svg>
-        <div class="flow__ladder" aria-hidden="true">
-          <div class="flow__steps"><span>Junior</span><span>Mid</span><span>Senior</span><span>Staff</span></div>
-          <div class="flow__track"><i class="flow__fill"></i></div>
-          <p class="flow__caption">output level · draft → review → evals → final review</p>
+        <div class="flow__ladder">
+          <div class="flow__levels" role="group" aria-label="Show the agent process at a seniority level">
+            <button type="button" aria-pressed="true">Junior</button>
+            <button type="button" aria-pressed="false">Mid</button>
+            <button type="button" aria-pressed="false">Senior</button>
+            <button type="button" aria-pressed="false">Staff</button>
+          </div>
+          <div class="flow__quality" aria-hidden="true"><span>quality</span><div class="flow__track"><i class="flow__fill"></i></div><b class="flow-q">—</b></div>
+          <p class="flow__caption" aria-hidden="true">one big prompt · no review · no evals</p>
         </div>
       </figure>
     </section>

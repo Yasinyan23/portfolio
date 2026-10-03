@@ -1,33 +1,159 @@
-// Live diagram of a multi-agent run: an orchestrator fans work out to agents, a review/fix loop and
-// evals lift the output from junior to staff level. Plain SVG + rAF; the run's clock only advances
+// The same task run four ways — Junior, Mid, Senior, Staff — as a live agent diagram, so the
+// difference in process (and in the result) is visible. Plain SVG + rAF; the clock only advances
 // while the diagram is on screen, so an offscreen hero costs nothing.
 
-type NodeId = "task" | "orch" | "plan" | "rag" | "code" | "review" | "evals" | "final";
-type State = "" | "busy" | "done" | "warn";
+type State = "" | "busy" | "done" | "warn" | "fail";
+type Tier = "S" | "L"; // small / large model, drives packet colour and cost
+type Spec = { id: string; x: number; y: number; w: number; label: string; sub?: string; h?: number; kind?: "tool" | "sm"; tier?: Tier };
+type EdgeKind = "v" | "h" | "fix";
 
-const H = 50;
-const NODES: Record<NodeId, { x: number; y: number; w: number; label: string; sub: string }> = {
-  task: { x: 80, y: 14, w: 320, label: "Task", sub: "› waiting" },
-  orch: { x: 155, y: 112, w: 170, label: "Orchestrator", sub: "effort · high" },
-  plan: { x: 12, y: 220, w: 142, label: "Planner", sub: "effort · low" },
-  rag: { x: 169, y: 220, w: 142, label: "Retriever", sub: "RAG · MCP tools" },
-  code: { x: 326, y: 220, w: 142, label: "Coder", sub: "effort · medium" },
-  review: { x: 169, y: 326, w: 142, label: "Reviewer", sub: "effort · medium" },
-  evals: { x: 169, y: 428, w: 142, label: "Evals", sub: "golden set" },
-  final: { x: 155, y: 526, w: 170, label: "Final review", sub: "effort · max" },
-};
-const EDGES: [NodeId, NodeId][] = [
-  ["task", "orch"], ["orch", "plan"], ["orch", "rag"], ["orch", "code"],
-  ["plan", "review"], ["rag", "review"], ["code", "review"], ["review", "evals"], ["evals", "final"],
+interface Run {
+  type(): Promise<void>;
+  go(key: string, dur?: number, opts?: { reverse?: boolean; fix?: boolean; tier?: Tier }): Promise<void>;
+  work(id: string, ms: number, note: string, after?: State, afterNote?: string): Promise<void>;
+  call(from: string, tool: string, delay: number): Promise<void>;
+  state(id: string, s: State, note?: string): void;
+  all(ps: Promise<void>[]): Promise<void>;
+}
+type Mode = { name: string; caption: string; quality: number; nodes: Spec[]; edges: [string, string, EdgeKind?][]; script: (r: Run) => Promise<void> };
+
+const H = 46;
+const TASK: Spec = { id: "task", x: 80, y: 14, w: 320, label: "Task", sub: "› waiting" };
+const TITLES = ["Add RAG endpoint with citations", "Cut inference latency by 30%", "Ship document extraction v2", "Fix flaky eval in CI"];
+
+const MODES: Mode[] = [
+  {
+    name: "Junior",
+    caption: "one big prompt · no review · no evals",
+    quality: 41,
+    nodes: [
+      TASK,
+      { id: "llm", x: 140, y: 230, w: 200, label: "LLM", sub: "one big prompt", tier: "L" },
+      { id: "out", x: 140, y: 450, w: 200, label: "Output", sub: "waiting" },
+    ],
+    edges: [["task", "llm"], ["llm", "out"]],
+    async script(r) {
+      await r.type();
+      await r.go("task-llm");
+      await r.work("llm", 650, "generating…", "done", "no review");
+      await r.go("llm-out");
+      r.state("out", "fail", "2 bugs shipped ✗");
+    },
+  },
+  {
+    name: "Mid",
+    caption: "one agent + tools · single review",
+    quality: 68,
+    nodes: [
+      TASK,
+      { id: "agent", x: 140, y: 175, w: 200, label: "Agent", sub: "effort · medium", tier: "L" },
+      { id: "search", x: 14, y: 160, w: 84, h: 28, label: "search", kind: "tool" },
+      { id: "db", x: 14, y: 210, w: 84, h: 28, label: "db", kind: "tool" },
+      { id: "tests", x: 382, y: 184, w: 84, h: 28, label: "run tests", kind: "tool" },
+      { id: "review", x: 140, y: 320, w: 200, label: "Reviewer", sub: "one pass", tier: "L" },
+      { id: "out", x: 140, y: 465, w: 200, label: "Output", sub: "waiting" },
+    ],
+    edges: [["task", "agent"], ["agent", "search", "h"], ["agent", "db", "h"], ["agent", "tests", "h"], ["agent", "review"], ["review", "out"]],
+    async script(r) {
+      await r.type();
+      await r.go("task-agent");
+      r.state("agent", "busy", "calling tools…");
+      await r.all(["search", "db", "tests"].map((t, i) => r.call("agent", t, i * 110)));
+      await r.work("agent", 300, "drafting…", "done", "draft ready");
+      await r.go("agent-review");
+      await r.work("review", 400, "reviewing…", "done", "1 issue fixed");
+      await r.go("review-out");
+      r.state("out", "warn", "1 bug slipped ⚠");
+    },
+  },
+  {
+    name: "Senior",
+    caption: "planner + parallel agents · review & fix loop",
+    quality: 86,
+    nodes: [
+      TASK,
+      { id: "orch", x: 155, y: 108, w: 170, label: "Orchestrator", sub: "effort · high", tier: "L" },
+      { id: "plan", x: 12, y: 208, w: 142, label: "Planner", sub: "effort · low", tier: "L" },
+      { id: "rag", x: 169, y: 208, w: 142, label: "Retriever", sub: "RAG · MCP", tier: "L" },
+      { id: "code", x: 326, y: 208, w: 142, label: "Coder", sub: "effort · medium", tier: "L" },
+      { id: "review", x: 169, y: 316, w: 142, label: "Reviewer", sub: "effort · medium", tier: "L" },
+      { id: "out", x: 155, y: 440, w: 170, label: "Output", sub: "waiting" },
+    ],
+    edges: [
+      ["task", "orch"], ["orch", "plan"], ["orch", "rag"], ["orch", "code"],
+      ["plan", "review"], ["rag", "review"], ["code", "review"], ["review", "code", "fix"], ["review", "out"],
+    ],
+    async script(r) {
+      await r.type();
+      await r.go("task-orch");
+      await r.work("orch", 280, "planning…", "done", "3 agents");
+      const branch = async (id: string, ms: number, note: string) => {
+        await r.go(`orch-${id}`, 260);
+        await r.work(id, ms, note);
+        await r.go(`${id}-review`, 280);
+      };
+      await r.all([branch("plan", 300, "3 steps"), branch("rag", 450, "12 docs found"), branch("code", 600, "writing code")]);
+      await r.work("review", 300, "reviewing…", "warn", "1 issue found");
+      await r.go("review-code", 320, { fix: true });
+      await r.work("code", 280, "fix round 1");
+      await r.go("code-review", 260);
+      await r.work("review", 220, "re-checking…", "done", "approved ✓");
+      await r.go("review-out");
+      r.state("out", "done", "shipped ✓");
+    },
+  },
+  {
+    name: "Staff",
+    caption: "model routing · parallel agents · evals · final review",
+    quality: 97,
+    nodes: [
+      TASK,
+      { id: "orch", x: 140, y: 100, w: 200, label: "Orchestrator", sub: "router · effort high", tier: "L" },
+      { id: "plan", x: 12, y: 192, w: 108, label: "Planner", sub: "small LLM", kind: "sm", tier: "S" },
+      { id: "rag", x: 128, y: 192, w: 108, label: "RAG", sub: "MCP tools", kind: "sm", tier: "S" },
+      { id: "code", x: 244, y: 192, w: 108, label: "Coder", sub: "large LLM", kind: "sm", tier: "L" },
+      { id: "test", x: 360, y: 192, w: 108, label: "Tester", sub: "small LLM", kind: "sm", tier: "S" },
+      { id: "review", x: 150, y: 290, w: 180, label: "Reviewer", sub: "effort · high", tier: "L" },
+      { id: "evals", x: 150, y: 388, w: 180, label: "Evals", sub: "golden set", tier: "S" },
+      { id: "final", x: 150, y: 486, w: 180, label: "Final review", sub: "effort · max", tier: "L" },
+    ],
+    edges: [
+      ["task", "orch"], ["orch", "plan"], ["orch", "rag"], ["orch", "code"], ["orch", "test"],
+      ["plan", "review"], ["rag", "review"], ["code", "review"], ["test", "review"],
+      ["review", "code", "fix"], ["review", "evals"], ["evals", "final"],
+    ],
+    async script(r) {
+      await r.type();
+      await r.go("task-orch");
+      await r.work("orch", 260, "routing…", "done", "4 agents · 2 models");
+      const branch = async (id: string, tier: Tier, ms: number, note: string) => {
+        await r.go(`orch-${id}`, 240, { tier });
+        await r.work(id, ms, note);
+        await r.go(`${id}-review`, 280, { tier });
+      };
+      await r.all([
+        branch("plan", "S", 260, "3 steps"),
+        branch("rag", "S", 380, "12 docs"),
+        branch("code", "L", 520, "writing…"),
+        branch("test", "S", 420, "4 tests"),
+      ]);
+      await r.work("review", 280, "reviewing…", "warn", "1 issue found");
+      await r.go("review-code", 320, { fix: true });
+      await r.work("code", 240, "fix #1");
+      await r.go("code-review", 260, { tier: "L" });
+      await r.work("review", 200, "re-checking…", "done", "approved ✓");
+      await r.go("review-evals");
+      await r.work("evals", 420, "1,700 cases…", "done", "100% ✓");
+      await r.go("evals-final");
+      await r.work("final", 320, "deep review…", "done", "shipped ✓");
+    },
+  },
 ];
-const TASKS = [
-  { title: "Add RAG endpoint with citations", plan: "3 steps", rag: "12 docs found", code: "writing code", issue: "2 issues found" },
-  { title: "Cut inference latency by 30%", plan: "profile first", rag: "traces loaded", code: "tuning threads", issue: "1 regression" },
-  { title: "Ship document extraction v2", plan: "schema first", rag: "labeled set", code: "new extractor", issue: "3 weak fields" },
-  { title: "Fix flaky eval in CI", plan: "reproduce", rag: "CI history", code: "seed + retry", issue: "missing test" },
-];
-const TOKENS_PER_MS = 6; // per busy agent; ~48k tokens a run
-const USD_PER_TOKEN = 6e-6;
+
+const TOKENS_PER_MS = 8; // per busy agent
+const PRICE: Record<Tier, number> = { S: 1e-6, L: 6e-6 }; // $ per token
+const HOLD_MS = 1100; // pause on the result before the next level
+const ABORT = Symbol("abort");
 
 const NS = "http://www.w3.org/2000/svg";
 const svgEl = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, text?: string) => {
@@ -39,172 +165,256 @@ const svgEl = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<strin
 const fmt = (n: number) => (n < 1000 ? String(Math.round(n)) : `${(n / 1000).toFixed(1)}k`);
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
-function edgePath(a: NodeId, b: NodeId): string {
-  const A = NODES[a];
-  const B = NODES[b];
-  const [x1, y1, x2, y2] = [A.x + A.w / 2, A.y + H, B.x + B.w / 2, B.y];
+function edgePath(a: Spec, b: Spec, kind: EdgeKind = "v"): string {
+  const ha = a.h ?? H;
+  const hb = b.h ?? H;
+  if (kind === "h") {
+    const left = b.x < a.x;
+    const [x1, y1] = [left ? a.x : a.x + a.w, a.y + ha / 2];
+    const [x2, y2] = [left ? b.x + b.w : b.x, b.y + hb / 2];
+    const mx = (x1 + x2) / 2;
+    return `M${x1} ${y1} C${mx} ${y1} ${mx} ${y2} ${x2} ${y2}`;
+  }
+  if (kind === "fix") {
+    // from the reviewer's right side back up into the coder
+    const [sx, sy, ex, ey] = [a.x + a.w, a.y + ha / 2, b.x + b.w / 2, b.y + hb];
+    return `M${sx} ${sy} C${ex + 40} ${sy} ${ex} ${ey + 30} ${ex} ${ey}`;
+  }
+  const [x1, y1, x2, y2] = [a.x + a.w / 2, a.y + ha, b.x + b.w / 2, b.y];
   const dy = (y2 - y1) / 2;
   return `M${x1} ${y1} C${x1} ${y1 + dy} ${x2} ${y2 - dy} ${x2} ${y2}`;
 }
 
-// the fix loop: from the reviewer's right side back up into the coder
-function fixPath(): string {
-  const r = NODES.review;
-  const c = NODES.code;
-  const [sx, sy, ex, ey] = [r.x + r.w, r.y + H / 2, c.x + c.w / 2, c.y + H];
-  return `M${sx} ${sy} C${ex} ${sy} ${ex} ${ey + 30} ${ex} ${ey}`;
-}
-
 export function initFlow(root: HTMLElement, reduce: boolean): void {
   const svg = root.querySelector("svg")!;
+  const modeEl = root.querySelector(".flow-mode")!;
   const runEl = root.querySelector(".flow-run")!;
   const tokEl = root.querySelector(".flow-tokens")!;
   const costEl = root.querySelector(".flow-cost")!;
+  const qEl = root.querySelector(".flow-q")!;
   const fill = root.querySelector<HTMLElement>(".flow__fill")!;
-  const steps = Array.from(root.querySelectorAll(".flow__steps span"));
+  const caption = root.querySelector(".flow__caption")!;
+  const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>(".flow__levels button"));
 
   const gEdges = svgEl("g", {});
   const gNodes = svgEl("g", {});
-  const gPackets = svgEl("g", {});
-  svg.append(gEdges, gNodes, gPackets);
+  const gFx = svgEl("g", {});
+  svg.append(gEdges, gNodes, gFx);
 
-  const edges: Record<string, SVGPathElement> = {};
-  for (const [a, b] of EDGES) gEdges.append((edges[`${a}-${b}`] = svgEl("path", { d: edgePath(a, b), class: "edge" })));
-  gEdges.append((edges["review-code"] = svgEl("path", { d: fixPath(), class: "edge edge--fix" })));
-
-  const nodes = {} as Record<NodeId, { g: SVGGElement; sub: SVGTextElement }>;
-  for (const [id, n] of Object.entries(NODES) as [NodeId, (typeof NODES)[NodeId]][]) {
-    const g = svgEl("g", { class: "node" });
-    const sub = svgEl("text", { x: n.x + 14, y: n.y + 38, class: "node__sub" }, n.sub);
-    g.append(
-      svgEl("rect", { x: n.x, y: n.y, width: n.w, height: H, rx: 12 }),
-      svgEl("text", { x: n.x + 14, y: n.y + 21, class: "node__label" }, n.label),
-      sub,
-      svgEl("circle", { cx: n.x + n.w - 18, cy: n.y + H / 2, r: 7, pathLength: 100, class: "node__spin" }),
-      svgEl("text", { x: n.x + n.w - 18, y: n.y + H / 2 + 5, class: "node__check" }, "✓"),
-    );
-    gNodes.append(g);
-    nodes[id] = { g, sub };
-  }
-
-  const busy = new Set<NodeId>();
+  let specs: Record<string, Spec> = {};
+  let edges: Record<string, SVGPathElement> = {};
+  let nodes: Record<string, { g: SVGGElement; sub: SVGTextElement | null }> = {};
+  const busy = new Set<string>();
   let tokens = 0;
-  const state = (id: NodeId, s: State, note?: string) => {
-    const { g, sub } = nodes[id];
-    g.classList.remove("is-busy", "is-done", "is-warn");
-    if (s) g.classList.add(`is-${s}`);
-    if (note !== undefined) sub.textContent = note;
-    if (s === "busy") busy.add(id);
-    else busy.delete(id);
-  };
-  const level = (l: number) => {
-    fill.style.width = `${((l + 1) / steps.length) * 100}%`;
-    steps.forEach((s, i) => s.classList.toggle("is-on", i <= l));
-  };
-  const counters = () => {
-    tokEl.textContent = fmt(tokens);
-    costEl.textContent = `$${(tokens * USD_PER_TOKEN).toFixed(2)}`;
-  };
+  let cost = 0;
+  let gen = 0;
+  let runNo = 0;
+  let title = TITLES[0];
 
-  if (reduce) {
-    const t = TASKS[0];
-    (Object.keys(NODES) as NodeId[]).forEach((id) => state(id, "done"));
-    state("task", "done", `› ${t.title}`);
-    state("review", "done", "approved ✓");
-    state("final", "done", "shipped ✓");
-    level(steps.length - 1);
-    tokens = 48200;
-    counters();
-    return;
-  }
-
-  // clock that only runs while visible; waits and packet flights are measured on it
+  // ---- clock: advances only while visible; waits, packets and sparks run on it ----
   let clock = 0;
   let last = 0;
   let raf = 0;
   let visible = false;
+  let sparkAt = 0;
   const waiters: { t: number; resolve: () => void }[] = [];
-  const packets: { path: SVGPathElement; len: number; start: number; dur: number; dot: SVGCircleElement; done: () => void }[] = [];
+  type Dot = { path: SVGPathElement; len: number; start: number; dur: number; el: SVGCircleElement; reverse: boolean; done?: () => void; hot: boolean };
+  let dots: Dot[] = [];
+  let sparks: { el: SVGCircleElement; x: number; y: number; born: number }[] = [];
+
+  const counters = () => {
+    tokEl.textContent = fmt(tokens);
+    costEl.textContent = `$${cost.toFixed(2)}`;
+  };
 
   const tick = (now: number) => {
     const dt = Math.min(now - last, 50);
     last = now;
     clock += dt;
-    tokens += busy.size * dt * TOKENS_PER_MS;
+    for (const id of busy) {
+      const t = specs[id]?.tier;
+      if (!t) continue;
+      tokens += dt * TOKENS_PER_MS;
+      cost += dt * TOKENS_PER_MS * PRICE[t];
+    }
     counters();
-    for (let i = packets.length - 1; i >= 0; i--) {
-      const p = packets[i];
-      const k = Math.min(1, (clock - p.start) / p.dur);
-      const pt = p.path.getPointAtLength(p.len * ease(k));
-      p.dot.setAttribute("cx", String(pt.x));
-      p.dot.setAttribute("cy", String(pt.y));
-      if (k >= 1) {
-        p.dot.remove();
-        p.path.classList.remove("is-hot");
-        packets.splice(i, 1);
-        p.done();
+
+    // comet packets along edges
+    dots = dots.filter((d) => {
+      const k = Math.min(1, Math.max(0, (clock - d.start) / d.dur));
+      const p = d.path.getPointAtLength(d.len * (d.reverse ? 1 - ease(k) : ease(k)));
+      d.el.setAttribute("cx", String(p.x));
+      d.el.setAttribute("cy", String(p.y));
+      d.el.style.opacity = clock < d.start ? "0" : "";
+      if (k < 1) return true;
+      d.el.remove();
+      if (d.hot) d.path.classList.remove("is-hot");
+      d.done?.();
+      return false;
+    });
+
+    // sparks rising off busy agents
+    if (clock - sparkAt > 45 && busy.size && sparks.length < 70) {
+      sparkAt = clock;
+      for (const id of busy) {
+        const s = specs[id];
+        if (!s || s.kind === "tool") continue;
+        const el = svgEl("circle", { r: 1.6, class: "spark" });
+        gFx.append(el);
+        sparks.push({ el, x: s.x + 10 + Math.random() * (s.w - 20), y: s.y, born: clock });
       }
     }
-    for (let i = waiters.length - 1; i >= 0; i--) {
-      if (waiters[i].t <= clock) waiters.splice(i, 1)[0].resolve();
-    }
+    sparks = sparks.filter((s) => {
+      const age = (clock - s.born) / 600;
+      if (age >= 1) {
+        s.el.remove();
+        return false;
+      }
+      s.el.setAttribute("cx", String(s.x));
+      s.el.setAttribute("cy", String(s.y - age * 18));
+      s.el.style.opacity = String(1 - age);
+      return true;
+    });
+
+    for (let i = waiters.length - 1; i >= 0; i--) if (waiters[i].t <= clock) waiters.splice(i, 1)[0].resolve();
     raf = requestAnimationFrame(tick);
   };
-
   const wait = (ms: number) => new Promise<void>((resolve) => waiters.push({ t: clock + ms, resolve }));
-  const travel = (key: string, dur = 520, fix = false) =>
-    new Promise<void>((done) => {
-      const path = edges[key];
-      path.classList.add("is-hot");
-      const dot = svgEl("circle", { r: 4.5, class: fix ? "pkt pkt--fix" : "pkt" });
-      gPackets.append(dot);
-      packets.push({ path, len: path.getTotalLength(), start: clock, dur, dot, done });
+
+  // ---- build one level's graph; nodes pop in with a stagger (CSS) ----
+  function build(m: number) {
+    const mode = MODES[m];
+    for (const d of dots) d.el.remove();
+    for (const s of sparks) s.el.remove();
+    dots = [];
+    sparks = [];
+    busy.clear();
+    gEdges.replaceChildren();
+    gNodes.replaceChildren();
+    specs = Object.fromEntries(mode.nodes.map((s) => [s.id, s]));
+    edges = {};
+    nodes = {};
+    for (const [a, b, kind] of mode.edges) {
+      const path = svgEl("path", { d: edgePath(specs[a], specs[b], kind), class: kind === "fix" ? "edge edge--fix" : "edge" });
+      gEdges.append(path);
+      edges[`${a}-${b}`] = path;
+    }
+    mode.nodes.forEach((s, i) => {
+      const h = s.h ?? H;
+      const g = svgEl("g", { class: `node${s.kind ? ` node--${s.kind}` : ""}`, style: `--i: ${i}` });
+      g.append(svgEl("rect", { x: s.x, y: s.y, width: s.w, height: h, rx: s.kind === "tool" ? 8 : 12 }));
+      let sub: SVGTextElement | null = null;
+      if (s.kind === "tool") {
+        g.append(svgEl("text", { x: s.x + s.w / 2, y: s.y + 18, class: "node__tool" }, s.label));
+      } else {
+        g.append(svgEl("text", { x: s.x + 14, y: s.y + 20, class: "node__label" }, s.label));
+        sub = svgEl("text", { x: s.x + 14, y: s.y + 36, class: "node__sub" }, s.sub ?? "");
+        const r = s.kind === "sm" ? 5 : 7;
+        const cx = s.x + s.w - (s.kind === "sm" ? 13 : 18);
+        g.append(
+          sub,
+          svgEl("circle", { cx, cy: s.y + h / 2, r, pathLength: 100, class: "node__spin" }),
+          svgEl("text", { x: cx, y: s.y + h / 2 + 5, class: "node__check" }, "✓"),
+        );
+      }
+      gNodes.append(g);
+      nodes[s.id] = { g, sub };
     });
-  const work = async (id: NodeId, ms: number, note: string, after: State = "done", afterNote = note) => {
-    state(id, "busy", note);
-    await wait(ms);
-    state(id, after, afterNote);
+    root.dataset.level = String(m);
+    modeEl.textContent = mode.name;
+    caption.textContent = mode.caption;
+    tabs.forEach((t, i) => t.setAttribute("aria-pressed", String(i === m)));
+    fill.style.width = "0";
+    qEl.textContent = "—";
+    tokens = 0;
+    cost = 0;
+    counters();
+  }
+
+  const setState = (id: string, s: State, note?: string) => {
+    const n = nodes[id];
+    if (!n) return;
+    n.g.classList.remove("is-busy", "is-done", "is-warn", "is-fail");
+    if (s) n.g.classList.add(`is-${s}`);
+    if (note !== undefined && n.sub) n.sub.textContent = note;
+    if (s === "busy") busy.add(id);
+    else busy.delete(id);
   };
 
-  async function run(n: number) {
-    const t = TASKS[n % TASKS.length];
-    runEl.textContent = `#${n + 1}`;
-    tokens = 0;
-    (Object.keys(NODES) as NodeId[]).forEach((id) => state(id, "", NODES[id].sub));
-    level(-1);
-
-    state("task", "busy", "› ");
-    for (let i = 1; i <= t.title.length; i++) {
-      nodes.task.sub.textContent = `› ${t.title.slice(0, i)}`;
-      await wait(28);
-    }
-    state("task", "done");
-    await travel("task-orch");
-    await work("orch", 700, "planning…");
-
-    const branch = async (id: NodeId, ms: number, note: string) => {
-      await travel(`orch-${id}`, 480);
-      await work(id, ms, note);
-      await travel(`${id}-review`, 520);
+  // a run bound to one generation: anything awaited after a level switch aborts
+  function makeRun(my: number, instant: boolean): Run {
+    const guard = async (p: Promise<void>) => {
+      await p;
+      if (my !== gen) throw ABORT;
     };
-    await Promise.all([branch("plan", 700, t.plan), branch("rag", 1100, t.rag), branch("code", 1500, t.code)]);
-    level(0); // first draft: junior
+    const pause = (ms: number) => (instant ? Promise.resolve() : wait(ms));
+    const run: Run = {
+      async type() {
+        setState("task", "busy", "› ");
+        if (!instant)
+          for (let i = 1; i <= title.length; i++) {
+            if (nodes.task.sub) nodes.task.sub.textContent = `› ${title.slice(0, i)}`;
+            await guard(wait(10));
+          }
+        setState("task", "done", `› ${title}`);
+      },
+      go(key, dur = 270, opts = {}) {
+        if (instant) return Promise.resolve();
+        const path = edges[key];
+        path.classList.add("is-hot");
+        const len = path.getTotalLength();
+        const cls = opts.fix ? "pkt pkt--fix" : opts.tier ? `pkt pkt--${opts.tier}` : "pkt";
+        return guard(
+          new Promise<void>((done) => {
+            // a comet: lead packet + two fading followers
+            [0, 1, 2].forEach((k) => {
+              const el = svgEl("circle", { r: 4.5 - k * 1.2, class: cls, style: `opacity: 0; --fade: ${1 - k * 0.3}` });
+              gFx.append(el);
+              dots.push({ path, len, start: clock + k * 45, dur, el, reverse: !!opts.reverse, hot: k === 2, done: k === 0 ? done : undefined });
+            });
+          }),
+        );
+      },
+      async work(id, ms, note, after = "done", afterNote = note) {
+        setState(id, "busy", note);
+        await guard(pause(ms));
+        setState(id, after, afterNote);
+      },
+      async call(from, tool, delay) {
+        await guard(pause(delay));
+        await run.go(`${from}-${tool}`, 230);
+        await run.work(tool, 140, "");
+        await run.go(`${from}-${tool}`, 230, { reverse: true });
+      },
+      state: setState,
+      all: (ps) => guard(Promise.all(ps).then(() => {})),
+    };
+    return run;
+  }
 
-    await work("review", 800, "reviewing…", "warn", t.issue);
-    await travel("review-code", 650, true);
-    await work("code", 800, "fix round 1");
-    await travel("code-review");
-    await work("review", 600, "re-checking…", "done", "approved ✓");
-    level(1);
+  async function start(m: number, instant = false, rebuild = true) {
+    const my = ++gen;
+    if (m === 0) title = TITLES[runNo++ % TITLES.length];
+    runEl.textContent = `#${Math.max(runNo, 1)}`;
+    if (rebuild) build(m);
+    const mode = MODES[m];
+    try {
+      await mode.script(makeRun(my, instant));
+      fill.style.width = `${mode.quality}%`;
+      qEl.textContent = `${mode.quality}%`;
+      if (instant) return;
+      await wait(HOLD_MS);
+      if (my === gen) void start((m + 1) % MODES.length);
+    } catch (e) {
+      if (e !== ABORT) throw e;
+    }
+  }
 
-    await travel("review-evals");
-    await work("evals", 1000, "1,700 cases…", "done", "all green ✓");
-    level(2);
+  tabs.forEach((t, i) => t.addEventListener("click", () => void start(i, reduce)));
 
-    await travel("evals-final");
-    await work("final", 900, "deep review…", "done", "shipped ✓");
-    level(3);
-    await wait(2600);
+  if (reduce) {
+    void start(MODES.length - 1, true); // static final state of the Staff run
+    return;
   }
 
   const play = (on: boolean) => {
@@ -220,8 +430,6 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
   }).observe(root);
   document.addEventListener("visibilitychange", () => play(visible && !document.hidden));
 
-  void (async () => {
-    await wait(900); // let the hero fade in first
-    for (let n = 0; ; n++) await run(n);
-  })();
+  build(0); // shown while the hero fades in, then the first run starts on it
+  void wait(700).then(() => start(0, false, false));
 }
