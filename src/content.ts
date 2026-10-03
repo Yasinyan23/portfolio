@@ -1,4 +1,4 @@
-// Every piece of text on the site lives here. Edit this file, nothing else.
+// All site content (profile, stats, stack, projects, experience) lives here. Section labels and button text live in render.ts.
 
 export type Link = { label: string; href: string };
 export type Metric = { value: string; label: string };
