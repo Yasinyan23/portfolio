@@ -54,8 +54,8 @@ export function render(root: HTMLElement): void {
   <main>
     <section class="hero" id="top">
       <div>
+        <p class="hero__role"><b>${esc(profile.name)}</b> · ${esc(profile.role)}</p>
         <p class="hero__badge"><span class="hero__dot" aria-hidden="true"></span>${esc(profile.availability)}</p>
-        <p class="hero__role">${esc(profile.name)} · ${esc(profile.role)}</p>
         <h1 class="hero__title">${profile.headline
           .split(" ")
           .map((w) => `<span class="word">${esc(w)}</span>`)

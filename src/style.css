@@ -1296,3 +1296,29 @@ body::before {
     font-size: 0.72rem;
   }
 }
+
+/* name first and loudest, availability badge quieter below it */
+.hero__role {
+  margin-bottom: 14px;
+  font-size: 0.95rem;
+}
+
+.hero__role b {
+  font: 700 1.35rem var(--display);
+  letter-spacing: 0.06em;
+  color: var(--fg);
+}
+
+.hero__badge {
+  margin-bottom: 24px;
+}
+
+@media (max-width: 480px) {
+  .hero__role {
+    font-size: 0.8rem;
+  }
+
+  .hero__role b {
+    font-size: 1.1rem;
+  }
+}
