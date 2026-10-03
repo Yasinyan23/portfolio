@@ -66,9 +66,9 @@ export function initMotion(reduce: boolean): void {
 
   gsap
     .timeline({ defaults: { ease: "power4.out" } })
-    .from(".hero__role", { y: 20, autoAlpha: 0, duration: 0.6 })
+    .from([".hero__badge", ".hero__role"], { y: 20, autoAlpha: 0, duration: 0.6, stagger: 0.1 })
     .from(".hero__title .word", { yPercent: 100, autoAlpha: 0, rotate: 3, duration: 0.9, stagger: 0.07 }, "-=0.3")
-    .from([".hero__intro", ".hero__cta"], { y: 24, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
+    .from([".hero__intro", ".hero__cta", ".hero__worked"], { y: 24, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
     .from(".viz", { scale: 0.92, autoAlpha: 0, duration: 1.1 }, "-=0.9");
 
   // section headings alternate between two entrances so no two neighbours feel the same

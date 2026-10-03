@@ -54,7 +54,8 @@ export function render(root: HTMLElement): void {
   <main>
     <section class="hero" id="top">
       <div>
-        <p class="hero__role">${esc(profile.role)}</p>
+        <p class="hero__badge"><span class="hero__dot" aria-hidden="true"></span>${esc(profile.availability)}</p>
+        <p class="hero__role">${esc(profile.name)} · ${esc(profile.role)}</p>
         <h1 class="hero__title">${profile.headline
           .split(" ")
           .map((w) => `<span class="word">${esc(w)}</span>`)
@@ -64,6 +65,7 @@ export function render(root: HTMLElement): void {
           <a class="btn" href="#projects" data-magnetic>See my work <span aria-hidden="true">↓</span></a>
           <a class="btn btn--ghost" href="${esc(profile.cv)}" download data-magnetic>Download CV</a>
         </div>
+        <p class="hero__worked"><span>Worked at</span>${jobs.map((j) => `<b>${esc(j.company)}</b>`).join("")}</p>
       </div>
       <figure class="viz" aria-label="Animated 3D pose estimation of a running athlete">
         <canvas class="viz__canvas"></canvas>

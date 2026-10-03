@@ -18,6 +18,7 @@ export type Project = {
 export const profile = {
   name: "Khachatur Pepanyan",
   role: "Senior AI Engineer",
+  availability: "Open to offers · remote · hybrid · on-site · relocation",
   headline: "I take AI from research prototype to production.",
   intro:
     "Computer vision, 3D motion reconstruction, LLMs, RAG and agents — built to survive real traffic. 8+ years of shipping software, 4+ of them in production AI.",

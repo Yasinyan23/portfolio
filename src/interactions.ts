@@ -26,10 +26,28 @@ export function initTheme(reduce: boolean): () => void {
     root.style.setProperty("--tx", `${r.left + r.width / 2}px`);
     root.style.setProperty("--ty", `${r.top + r.height / 2}px`);
     root.classList.add("theme-vt");
-    document.startViewTransition(apply).finished.finally(() => root.classList.remove("theme-vt"));
+    const vt = document.startViewTransition(apply);
+    vt.ready.catch(() => {}); // aborted (e.g. tab hidden): the DOM update still applies
+    vt.finished.finally(() => root.classList.remove("theme-vt"));
   };
   btn.addEventListener("click", toggle);
   return toggle;
+}
+
+// Background glow drifts after the pointer (CSS transition does the easing). Fine pointers only.
+export function initAurora(): void {
+  if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
+  const root = document.documentElement;
+  let queued = false;
+  addEventListener("pointermove", (e) => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      root.style.setProperty("--px", (e.clientX / innerWidth - 0.5).toFixed(3));
+      root.style.setProperty("--py", (e.clientY / innerHeight - 0.5).toFixed(3));
+    });
+  });
 }
 
 // Buttons lean toward the pointer. Fine pointers only.

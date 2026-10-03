@@ -22,7 +22,9 @@ export function initCase(reduce: boolean): (i: number) => void {
       done();
       return;
     }
-    document.startViewTransition(update).finished.finally(done);
+    const vt = document.startViewTransition(update);
+    vt.ready.catch(() => {}); // aborted (e.g. tab hidden): the DOM update still applies
+    vt.finished.finally(done);
   };
 
   const fill = (i: number) => {
