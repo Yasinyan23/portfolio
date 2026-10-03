@@ -1170,52 +1170,30 @@ html:has(dialog[open]) {
   top: 0;
   left: 0;
   z-index: 100;
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  margin: -14px 0 0 -14px;
+  width: 18px;
+  height: 18px;
+  margin: -9px 0 0 -9px;
   border: 1.5px solid var(--accent-2);
   border-radius: 50%;
   pointer-events: none;
   opacity: 0;
   transition:
-    width 0.25s,
-    height 0.25s,
-    margin 0.25s,
-    background-color 0.25s,
-    border-color 0.25s,
+    width 0.2s,
+    height 0.2s,
+    margin 0.2s,
+    background-color 0.2s,
     opacity 0.2s;
 }
 
 .cursor.is-on {
-  opacity: 1;
+  opacity: 0.8;
 }
 
-.cursor[data-state="link"] {
-  width: 44px;
-  height: 44px;
-  margin: -22px 0 0 -22px;
-  background-color: rgba(45, 226, 192, 0.12);
-}
-
-.cursor[data-state="label"] {
-  width: 76px;
-  height: 76px;
-  margin: -38px 0 0 -38px;
-  background-color: var(--accent-2);
-  border-color: transparent;
-}
-
-.cursor span {
-  font: 600 0.72rem Inter, system-ui, sans-serif;
-  color: #07070b;
-  opacity: 0;
-  transition: opacity 0.2s;
-}
-
-.cursor[data-state="label"] span {
-  opacity: 1;
+.cursor.is-link {
+  width: 32px;
+  height: 32px;
+  margin: -16px 0 0 -16px;
+  background-color: rgba(45, 226, 192, 0.08);
 }
 
 /* ---------- attention ---------- */

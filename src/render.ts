@@ -98,7 +98,7 @@ export function render(root: HTMLElement): void {
 
     <section id="terminal" class="console">
       <h2 class="stream">Ask my terminal</h2>
-      <div class="term reveal" data-cursor="Type">
+      <div class="term reveal">
         <div class="term__out" role="log" aria-live="polite"></div>
         <label class="term__prompt"><span aria-hidden="true">$</span><input id="term-input" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Terminal command, for example help" placeholder="type help" /></label>
       </div>
@@ -110,7 +110,7 @@ export function render(root: HTMLElement): void {
       ${projects
         .map(
           (p, i) => `
-        <article class="card reveal" data-cursor="Open">
+        <article class="card reveal">
           <span class="card__num" aria-hidden="true">${String(i + 1).padStart(2, "0")}</span>
           <div class="card__head">
             <p class="card__org">${esc(p.org)}</p>

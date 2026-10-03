@@ -32,17 +32,15 @@ export function initTheme(reduce: boolean): () => void {
   return toggle;
 }
 
-// Follower ring with a contextual label + magnetic buttons. Fine pointers only.
+// Small follower ring that grows over interactive elements, + magnetic buttons. Fine pointers only.
 export function initCursor(): void {
   if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
   const ring = document.createElement("div");
   ring.className = "cursor";
   ring.setAttribute("aria-hidden", "true");
-  ring.innerHTML = "<span></span>";
   document.body.append(ring);
-  const label = ring.firstElementChild!;
-  const x = gsap.quickTo(ring, "x", { duration: 0.35, ease: "power3" });
-  const y = gsap.quickTo(ring, "y", { duration: 0.35, ease: "power3" });
+  const x = gsap.quickTo(ring, "x", { duration: 0.1, ease: "power2" });
+  const y = gsap.quickTo(ring, "y", { duration: 0.1, ease: "power2" });
 
   addEventListener("pointermove", (e) => {
     x(e.clientX);
@@ -51,11 +49,7 @@ export function initCursor(): void {
   });
   document.documentElement.addEventListener("pointerleave", () => ring.classList.remove("is-on"));
   document.addEventListener("pointerover", (e) => {
-    const target = (e.target as Element).closest?.("[data-cursor], a, button, input, canvas");
-    const text =
-      target?.getAttribute("data-cursor") ?? (target?.matches("input") ? "Type" : target?.matches("canvas") ? "Rotate" : "");
-    ring.dataset.state = text ? "label" : target ? "link" : "";
-    label.textContent = text;
+    ring.classList.toggle("is-link", !!(e.target as Element).closest?.("a, button, .card, canvas"));
   });
 
   document.querySelectorAll<HTMLElement>("[data-magnetic], .socials a").forEach((el) => {
