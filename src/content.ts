@@ -3,7 +3,16 @@
 export type Link = { label: string; href: string };
 export type Metric = { value: string; label: string };
 export type Stat = { value: number; prefix?: string; suffix?: string; label: string };
-export type Job = { company: string; role: string; period: string; summary: string };
+export type Job = {
+  company: string;
+  role: string;
+  period: string;
+  start: string; // YYYY-MM
+  end?: string; // YYYY-MM, absent = current role
+  summary: string;
+  chips: string[];
+  stack: string[];
+};
 export type Project = {
   title: string;
   org: string;
@@ -33,7 +42,7 @@ export const profile = {
     "#229 global · 3,276 solved · 783 hard",
   ],
   about: [
-    "I'm a Senior AI Engineer with 8+ years in software and 4+ years building production AI — computer vision, 3D human motion reconstruction, LLMs, RAG and tool-calling agents. I enjoy the half of AI that decides whether a model survives real traffic: evaluation, inference optimization, serving and observability.",
+    "I'm a Senior AI Engineer with 8+ years in software and 4+ years building production AI — computer vision, 3D human motion reconstruction, LLMs, RAG and tool-calling agents. My focus is evaluation, inference optimization, serving and observability.",
     "Today I own the end-to-end production AI systems at FitWise AI that turn match video into biomechanics insights. Before that I led a team of 5–7 engineers building LLM-powered credit decisioning in fintech. I keep my algorithms sharp on LeetCode, where I'm ranked #229 globally.",
   ],
   facts: [
@@ -50,6 +59,14 @@ export const profile = {
     ["production", "traffic", "inference", "optimization", "serving", "observability", "survives", "systems"],
     ["led", "team", "engineers", "5–7"],
     ["leetcode", "algorithms", "#229", "ranked", "globally"],
+  ],
+  quote: "The half of AI I love is the one that decides whether a model survives real traffic.",
+  now: "Turning match video into 3D biomechanics insights at FitWise AI.",
+  leetcode: { rank: 229, solved: 3276, hard: 783, hardTotal: 979 },
+  principles: [
+    { title: "Measure before optimizing", text: "Profiling an 80-core fleet at load average 837 found the real bottleneck — and a 30–40% throughput gain." },
+    { title: "Evals before prompts", text: "A 1,700-case golden set and a CI gate decide whether a prompt or model change ships." },
+    { title: "Humans stay in the loop", text: "Agents draft, analysts decide; low-confidence fields go to people, not downstream." },
   ],
   contactNote: "Have a role or a hard problem in mind? Email or Telegram is the fastest way to reach me.",
   socials: [
@@ -277,6 +294,9 @@ export const jobs: Job[] = [
     company: "FitWise AI",
     role: "Senior AI Software Engineer — AI Platform & Product",
     period: "Feb 2026 — Present",
+    start: "2026-02",
+    chips: ["20k+ plays/day", "30 inference workers", "Patent co-inventor"],
+    stack: ["PyTorch", "Computer vision", "Celery", "RabbitMQ", "PostgreSQL", "GCP"],
     summary:
       "Own the production AI systems that turn match video into biomechanics insights: computer-vision models, 3D body reconstruction, serving on 30 inference workers, 20k+ plays/day. Patent co-inventor.",
   },
@@ -284,6 +304,10 @@ export const jobs: Job[] = [
     company: "Nexa Product Labs",
     role: "Team Lead / Senior Software Engineer — AI & Full-Stack Products",
     period: "Sep 2023 — Jan 2026",
+    start: "2023-09",
+    end: "2026-01",
+    chips: ["−80% decision time", "50–70k requests/day", "Led 5–7 engineers"],
+    stack: ["LLMs", "RAG", "MCP", "FastAPI", "pgvector", "RabbitMQ"],
     summary:
       "Led 5–7 engineers on fintech credit decisioning: LLM underwriting with RAG and agents, 50–70k requests/day, decision time −80%, manual reviews −60%.",
   },
@@ -291,6 +315,10 @@ export const jobs: Job[] = [
     company: "EPAM Systems",
     role: "Senior Software Engineer",
     period: "Jul 2021 — Oct 2023",
+    start: "2021-07",
+    end: "2023-10",
+    chips: ["−30% request time", "−50% time to fix prod errors"],
+    stack: ["Python", "Java", "React", "Cloud"],
     summary:
       "Enterprise e-commerce on Python, Java and React: request execution time −30%, time to detect and resolve production errors −50%.",
   },
@@ -298,6 +326,10 @@ export const jobs: Job[] = [
     company: "BrightLayer Technologies",
     role: "Software Engineer — Python & Web Applications",
     period: "Apr 2019 — Jul 2021",
+    start: "2019-04",
+    end: "2021-07",
+    chips: ["−20% calculation runtime", "−40% manual reporting"],
+    stack: ["Python", "Microservices", "Geospatial", "CI/CD"],
     summary:
       "Distributed backends for transport analytics and forecasting: calculation runtime −20%, manual reporting −40%, migration from legacy components to microservices.",
   },

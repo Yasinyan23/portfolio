@@ -458,7 +458,7 @@ section {
 
 .card__org,
 .card__label,
-.facts span {
+.tile__label {
   font: 500 0.75rem var(--mono);
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -588,12 +588,6 @@ section {
   box-shadow: 0 0 0 4px rgba(45, 226, 192, 0.12);
 }
 
-.job__period {
-  font: 500 0.8rem var(--mono);
-  letter-spacing: 0.08em;
-  color: var(--accent-2);
-}
-
 .job h3 {
   margin: 8px 0 4px;
   font-size: 1.5rem;
@@ -611,40 +605,6 @@ section {
 }
 
 /* ---------- about ---------- */
-
-#about > p {
-  max-width: 68ch;
-  margin-bottom: 20px;
-  font-size: 1.15rem;
-  color: var(--text);
-}
-
-.facts {
-  display: grid;
-  gap: 14px;
-  margin-top: 36px;
-  list-style: none;
-}
-
-@media (min-width: 800px) {
-  .facts {
-    grid-template-columns: 1fr 1fr;
-  }
-}
-
-.facts li {
-  padding: 18px 22px;
-  border-radius: 16px;
-  background: var(--glass);
-  border: 1px solid var(--line);
-  color: var(--text);
-}
-
-.facts span {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--accent-2);
-}
 
 /* ---------- contact ---------- */
 
@@ -1166,12 +1126,6 @@ html:has(dialog[open]) {
   background-color: rgb(124 92 255 / calc(var(--a, 0) * 0.32));
 }
 
-#about > .about__hint {
-  margin-top: -6px;
-  font: 0.75rem var(--mono);
-  letter-spacing: 0.06em;
-  color: var(--muted);
-}
 
 /* ---------- first-screen polish ---------- */
 
@@ -1320,5 +1274,290 @@ body::before {
 
   .hero__role b {
     font-size: 1.1rem;
+  }
+}
+
+/* ---------- experience v2 ---------- */
+
+.job {
+  display: grid;
+  gap: 8px 40px;
+}
+
+@media (min-width: 860px) {
+  .job {
+    grid-template-columns: 210px 1fr;
+  }
+
+  .job__side {
+    position: sticky;
+    top: 96px;
+    align-self: start;
+  }
+}
+
+.job::before {
+  transition:
+    background-color 0.3s,
+    box-shadow 0.3s;
+}
+
+.job.is-active::before {
+  background: var(--accent-2);
+  box-shadow:
+    0 0 0 6px rgba(45, 226, 192, 0.15),
+    0 0 18px rgba(45, 226, 192, 0.6);
+}
+
+.job__years {
+  display: block;
+  font: 700 clamp(1.5rem, 2.6vw, 2rem) / 1.1 var(--display);
+  letter-spacing: -0.01em;
+  color: transparent;
+  -webkit-text-stroke: 1px var(--muted);
+  transition: color 0.3s;
+}
+
+.job.is-active .job__years {
+  color: var(--fg);
+  -webkit-text-stroke-color: transparent;
+}
+
+.job--now .job__years {
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke-color: transparent;
+}
+
+.job__dur {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+  font: 500 0.8rem var(--mono);
+  color: var(--muted);
+}
+
+.job__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #3ddc84;
+}
+
+.job__live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ddc84;
+  animation: pulse 2s infinite;
+}
+
+.job__main h3 {
+  margin-top: 0;
+}
+
+.job__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 12px;
+  list-style: none;
+}
+
+.job__chips li {
+  padding: 6px 12px;
+  font: 600 0.85rem var(--display);
+  color: var(--fg);
+  background: rgba(124, 92, 255, 0.12);
+  border: 1px solid rgba(124, 92, 255, 0.28);
+  border-radius: 10px;
+}
+
+/* ---------- about v2: quote + bento ---------- */
+
+.about__quote {
+  max-width: 24ch;
+  margin: 0 0 40px;
+  font: 700 clamp(1.8rem, 4.2vw, 3rem) / 1.15 var(--display);
+  letter-spacing: -0.02em;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.bento {
+  display: grid;
+  gap: 14px;
+}
+
+@media (min-width: 640px) {
+  .bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .tile--text,
+  .tile--how {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (min-width: 960px) {
+  .bento {
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-areas:
+      "text text leet now"
+      "text text patent patent"
+      "how how how education";
+  }
+
+  .tile--text {
+    grid-area: text;
+  }
+
+  .tile--leet {
+    grid-area: leet;
+  }
+
+  .tile--now {
+    grid-area: now;
+  }
+
+  .tile--patent {
+    grid-area: patent;
+  }
+
+  .tile--education {
+    grid-area: education;
+  }
+
+  .tile--how {
+    grid-area: how;
+  }
+}
+
+.tile {
+  padding: 24px;
+  color: var(--text);
+  background: var(--glass);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  transition: border-color 0.3s;
+}
+
+.tile:hover {
+  border-color: rgba(124, 92, 255, 0.35);
+}
+
+.tile__label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  color: var(--accent-2);
+}
+
+.tile__big {
+  font: 600 1.15rem / 1.4 var(--display);
+  color: var(--fg);
+}
+
+.about__text {
+  margin-bottom: 16px;
+  font-size: 1.08rem;
+}
+
+.about__hint {
+  font: 0.72rem var(--mono);
+  letter-spacing: 0.06em;
+  color: var(--muted);
+}
+
+.tile--patent {
+  background:
+    linear-gradient(135deg, rgba(124, 92, 255, 0.18), rgba(45, 226, 192, 0.08)),
+    var(--glass);
+  border-color: rgba(124, 92, 255, 0.35);
+}
+
+.ring {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  margin: 4px 0 14px;
+}
+
+.ring svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.ring circle {
+  fill: none;
+  stroke-width: 9;
+}
+
+.ring__track {
+  stroke: var(--line);
+}
+
+.ring__bar {
+  stroke: var(--accent-2);
+  stroke-linecap: round;
+  stroke-dasharray: 100;
+  stroke-dashoffset: calc(100 - var(--p));
+}
+
+.ring__text {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+  font: 0.7rem var(--mono);
+  color: var(--muted);
+}
+
+.ring__text b {
+  font: 700 1.5rem var(--display);
+  color: var(--fg);
+}
+
+.principles {
+  display: grid;
+  gap: 20px;
+  list-style: none;
+}
+
+@media (min-width: 760px) {
+  .principles {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.principles span {
+  font: 500 0.75rem var(--mono);
+  color: var(--accent-2);
+}
+
+.principles b {
+  display: block;
+  margin: 6px 0;
+  font: 600 1.05rem var(--display);
+  color: var(--fg);
+}
+
+.principles p {
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .job__live i {
+    animation: none;
   }
 }

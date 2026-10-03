@@ -1,5 +1,5 @@
 import { jobs, profile, projects, stack, stats } from "./content";
-import type { Project } from "./content";
+import type { Job, Project } from "./content";
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ENTITIES[c]);
@@ -32,6 +32,16 @@ export const caseHTML = (p: Project, i: number, total: number) => `
     ${i > 0 ? `<button type="button" class="btn btn--ghost" data-case="${i - 1}">← ${esc(projects[i - 1].title)}</button>` : "<span></span>"}
     ${i < total - 1 ? `<button type="button" class="btn btn--ghost" data-case="${i + 1}">${esc(projects[i + 1].title)} →</button>` : ""}
   </p>`;
+
+// months between YYYY-MM dates; an open end means "until now"
+const months = (start: string, end?: string) => {
+  const [y1, m1] = start.split("-").map(Number);
+  const now = new Date();
+  const [y2, m2] = end ? end.split("-").map(Number) : [now.getFullYear(), now.getMonth() + 1];
+  return Math.max(1, (y2 - y1) * 12 + (m2 - m1));
+};
+const duration = (n: number) => [Math.floor(n / 12) && `${Math.floor(n / 12)} yr`, n % 12 && `${n % 12} mo`].filter(Boolean).join(" ");
+const years = (j: Job) => `${j.start.slice(0, 4)} — ${j.end ? j.end.slice(0, 4) : "now"}`;
 
 export const formatStat = (value: number, prefix = "", suffix = "") =>
   `${prefix}${Math.round(value).toLocaleString("en-US")}${suffix}`;
@@ -137,11 +147,18 @@ export function render(root: HTMLElement): void {
           ${jobs
             .map(
               (j) => `
-          <li class="job reveal">
-            <span class="job__period">${esc(j.period)}</span>
-            <h3>${esc(j.company)}</h3>
-            <p class="job__role">${esc(j.role)}</p>
-            <p class="job__summary">${esc(j.summary)}</p>
+          <li class="job reveal${j.end ? "" : " job--now"}">
+            <div class="job__side">
+              <span class="job__years">${years(j)}</span>
+              <span class="job__dur">${duration(months(j.start, j.end))}${j.end ? "" : ` <span class="job__live"><i aria-hidden="true"></i>now</span>`}</span>
+            </div>
+            <div class="job__main">
+              <h3>${esc(j.company)}</h3>
+              <p class="job__role">${esc(j.role)}</p>
+              <p class="job__summary">${esc(j.summary)}</p>
+              <ul class="job__chips">${j.chips.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>
+              <ul class="tags">${j.stack.map((s) => `<li>${esc(s)}</li>`).join("")}</ul>
+            </div>
           </li>`,
             )
             .join("")}
@@ -151,13 +168,47 @@ export function render(root: HTMLElement): void {
 
     <section id="about">
       <h2 class="stream">About</h2>
-      ${profile.about
-        .map((t) => `<p class="about__text reveal">${t.split(" ").map((w) => `<span class="w">${esc(w)}</span>`).join(" ")}</p>`)
-        .join("")}
-      <p class="about__hint reveal" aria-hidden="true">hover a word · attention head 1 / layer 12</p>
-      <ul class="facts">
-        ${profile.facts.map((f) => `<li class="reveal"><span>${esc(f.label)}</span>${esc(f.text)}</li>`).join("")}
-      </ul>
+      <blockquote class="about__quote reveal">${esc(profile.quote)}</blockquote>
+      <div class="bento">
+        <div class="tile tile--text reveal">
+          ${profile.about
+            .map((t) => `<p class="about__text">${t.split(" ").map((w) => `<span class="w">${esc(w)}</span>`).join(" ")}</p>`)
+            .join("")}
+          <p class="about__hint" aria-hidden="true">hover a word · attention head 1 / layer 12</p>
+        </div>
+        <div class="tile tile--leet reveal">
+          <p class="tile__label">LeetCode</p>
+          <div class="ring">
+            <svg viewBox="0 0 120 120" aria-hidden="true">
+              <circle class="ring__track" cx="60" cy="60" r="52" />
+              <circle class="ring__bar" cx="60" cy="60" r="52" pathLength="100" style="--p: ${Math.round((profile.leetcode.hard / profile.leetcode.hardTotal) * 100)}" />
+            </svg>
+            <span class="ring__text"><b>#${profile.leetcode.rank}</b>global</span>
+          </div>
+          <p>${profile.leetcode.hard} / ${profile.leetcode.hardTotal} hard · ${profile.leetcode.solved.toLocaleString("en-US")} solved</p>
+        </div>
+        <div class="tile tile--now reveal">
+          <p class="tile__label"><span class="hero__dot" aria-hidden="true"></span>Now</p>
+          <p class="tile__big">${esc(profile.now)}</p>
+        </div>
+        ${profile.facts
+          .map(
+            (f) => `
+        <div class="tile tile--${f.label.toLowerCase()} reveal">
+          <p class="tile__label">${esc(f.label)}</p>
+          <p class="tile__big">${esc(f.text)}</p>
+        </div>`,
+          )
+          .join("")}
+        <div class="tile tile--how reveal">
+          <p class="tile__label">How I work</p>
+          <ol class="principles">
+            ${profile.principles
+              .map((x, i) => `<li><span>0${i + 1}</span><b>${esc(x.title)}</b><p>${esc(x.text)}</p></li>`)
+              .join("")}
+          </ol>
+        </div>
+      </div>
     </section>
 
     <section id="contact">

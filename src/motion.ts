@@ -115,6 +115,18 @@ export function initMotion(reduce: boolean): void {
     });
   });
 
+  // the job in the middle of the screen lights up its year and timeline node
+  document.querySelectorAll<HTMLElement>(".job").forEach((job) =>
+    ScrollTrigger.create({ trigger: job, start: "top 60%", end: "bottom 40%", toggleClass: "is-active" }),
+  );
+
+  gsap.from(".ring__bar", {
+    strokeDashoffset: 100,
+    duration: 1.6,
+    ease: "power3.out",
+    scrollTrigger: { trigger: ".ring", start: "top 90%", once: true },
+  });
+
   gsap.from(".timeline__line", {
     scaleY: 0,
     ease: "none",
