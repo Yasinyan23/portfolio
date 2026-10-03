@@ -1288,3 +1288,11 @@ body::before {
     transition: none;
   }
 }
+
+@media (max-width: 480px) {
+  .hero__badge {
+    gap: 7px;
+    padding: 5px 11px 5px 9px;
+    font-size: 0.72rem;
+  }
+}
