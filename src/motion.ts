@@ -69,7 +69,7 @@ export function initMotion(reduce: boolean): void {
     .from([".hero__role", ".hero__badge"], { y: 20, autoAlpha: 0, duration: 0.6, stagger: 0.1 })
     .from(".hero__title .word", { yPercent: 100, autoAlpha: 0, rotate: 3, duration: 0.9, stagger: 0.07 }, "-=0.3")
     .from([".hero__intro", ".hero__cta", ".hero__worked"], { y: 24, autoAlpha: 0, duration: 0.7, stagger: 0.1 }, "-=0.5")
-    .from(".viz", { scale: 0.92, autoAlpha: 0, duration: 1.1 }, "-=0.9");
+    .from(".flow", { scale: 0.94, autoAlpha: 0, duration: 1.1 }, "-=0.9");
 
   // section headings alternate between two entrances so no two neighbours feel the same
   document.querySelectorAll<HTMLElement>("h2.stream").forEach((h, i) => {

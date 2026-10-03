@@ -64,7 +64,7 @@ export function render(root: HTMLElement): void {
   <main>
     <section class="hero" id="top">
       <div>
-        <p class="hero__role"><b>${esc(profile.name)}</b> · ${esc(profile.role)}</p>
+        <p class="hero__role"><b>${esc(profile.name)}</b>${esc(profile.role)}</p>
         <p class="hero__badge"><span class="hero__dot" aria-hidden="true"></span>${esc(profile.availability)}</p>
         <h1 class="hero__title">${profile.headline
           .split(" ")
@@ -77,14 +77,17 @@ export function render(root: HTMLElement): void {
         </div>
         <p class="hero__worked"><span>Worked at</span>${jobs.map((j) => `<b>${esc(j.company)}</b>`).join("")}</p>
       </div>
-      <figure class="viz" aria-label="Animated 3D pose estimation of a running athlete">
-        <canvas class="viz__canvas"></canvas>
-        <div class="viz__hud" aria-hidden="true">
-          <span>knee L <b class="hud-knee">—</b></span>
-          <span>phase <b class="hud-phase">—</b></span>
-          <span>keypoints <b>17</b></span>
+      <figure class="flow" aria-label="Animated diagram of a multi-agent AI run: an orchestrator dispatches agents, then review, a fix loop and evals raise the output from junior to staff level">
+        <div class="flow__hud" aria-hidden="true">
+          <span class="flow__live"><i></i>agent run <b class="flow-run">#1</b></span>
+          <span>tokens <b class="flow-tokens">0</b> · <b class="flow-cost">$0.00</b></span>
         </div>
-        <figcaption>live pose estimation · move the cursor to rotate</figcaption>
+        <svg class="flow__svg" viewBox="0 0 480 590" aria-hidden="true"></svg>
+        <div class="flow__ladder" aria-hidden="true">
+          <div class="flow__steps"><span>Junior</span><span>Mid</span><span>Senior</span><span>Staff</span></div>
+          <div class="flow__track"><i class="flow__fill"></i></div>
+          <p class="flow__caption">output level · draft → review → evals → final review</p>
+        </div>
       </figure>
     </section>
 

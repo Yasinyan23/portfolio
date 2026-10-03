@@ -720,7 +720,7 @@ section {
 
 /* dark panels keep their own palette in both themes */
 .term,
-.viz {
+.flow {
   --fg: #f1f1f6;
   --muted: #aeaec1;
   --accent-2: #2de2c0;
@@ -789,58 +789,246 @@ kbd {
   }
 }
 
-/* ---------- hero pose visual ---------- */
+/* ---------- hero: live multi-agent diagram ---------- */
 
-.viz {
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: 1fr 1.05fr;
+  }
+
+  .hero__title {
+    font-size: clamp(2.6rem, 5vw, 4.4rem);
+  }
+}
+
+.flow {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  height: min(80vh, 760px);
+  min-height: 540px;
   margin: 0;
-  aspect-ratio: 4 / 5;
-  max-height: 72vh;
-  border-radius: 20px;
+  padding: 16px 18px 14px;
   overflow: hidden;
   background:
-    radial-gradient(120% 70% at 50% 100%, rgba(124, 92, 255, 0.25), transparent 60%),
+    radial-gradient(120% 60% at 50% 0%, rgba(124, 92, 255, 0.22), transparent 60%),
     rgba(12, 12, 18, 0.9);
   border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 20px;
   box-shadow: 0 30px 80px -30px rgba(124, 92, 255, 0.5);
 }
 
-.viz__canvas {
+.flow::before {
+  content: "";
   position: absolute;
   inset: 0;
-  width: 100%;
-  height: 100%;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.07) 1px, transparent 1px);
+  background-size: 22px 22px;
+  mask-image: linear-gradient(#000, transparent 90%);
+  pointer-events: none;
 }
 
-.viz__hud {
-  position: absolute;
-  top: 16px;
-  right: 18px;
-  display: grid;
-  gap: 4px;
-  text-align: right;
+.flow__hud {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
   font: 500 0.75rem var(--mono);
   color: var(--muted);
 }
 
-.viz__hud b {
+.flow__hud b {
   font-weight: 500;
+  color: var(--fg);
+}
+
+.flow__live {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.flow__live i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #3ddc84;
+  animation: pulse 2s infinite;
+}
+
+.flow__svg {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+}
+
+.flow__ladder {
+  position: relative;
+  margin-top: 6px;
+}
+
+.flow__steps {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  font: 500 0.72rem var(--mono);
+  color: var(--muted);
+  transition: color 0.3s;
+}
+
+.flow__steps span {
+  transition: color 0.4s;
+}
+
+.flow__steps span.is-on {
+  color: var(--fg);
+}
+
+.flow__steps span:last-child.is-on {
   color: var(--accent-2);
 }
 
-.viz figcaption {
-  position: absolute;
-  left: 18px;
-  right: 18px;
-  bottom: 14px;
-  font: 0.72rem var(--mono);
-  letter-spacing: 0.06em;
+.flow__track {
+  height: 6px;
+  margin: 8px 0 6px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+}
+
+.flow__fill {
+  display: block;
+  width: 0;
+  height: 100%;
+  background: var(--grad);
+  border-radius: inherit;
+  transition: width 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.flow__caption {
+  font: 0.7rem var(--mono);
   color: #8a8a9c;
 }
 
+/* svg parts */
+.edge {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 1.5;
+  transition: stroke 0.3s;
+}
+
+.edge.is-hot {
+  stroke: rgba(45, 226, 192, 0.6);
+}
+
+.edge--fix {
+  stroke: rgba(255, 181, 71, 0.3);
+  stroke-dasharray: 5 5;
+}
+
+.edge--fix.is-hot {
+  stroke: #ffb547;
+}
+
+.pkt {
+  fill: #2de2c0;
+  filter: drop-shadow(0 0 6px #2de2c0);
+}
+
+.pkt--fix {
+  fill: #ffb547;
+  filter: drop-shadow(0 0 6px #ffb547);
+}
+
+.node rect {
+  fill: rgba(255, 255, 255, 0.04);
+  stroke: rgba(255, 255, 255, 0.13);
+  stroke-width: 1.2;
+  transition:
+    stroke 0.3s,
+    fill 0.3s;
+}
+
+.node__label {
+  font: 600 15px Inter, system-ui, sans-serif;
+  fill: #f1f1f6;
+}
+
+.node__sub {
+  font: 500 10.5px "JetBrains Mono", monospace;
+  fill: #aeaec1;
+}
+
+.node__spin {
+  fill: none;
+  stroke: #2de2c0;
+  stroke-width: 2.5;
+  stroke-dasharray: 28 72;
+  opacity: 0;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.node__check {
+  font: 700 15px Inter, system-ui, sans-serif;
+  fill: #2de2c0;
+  text-anchor: middle;
+  opacity: 0;
+}
+
+.node.is-busy rect {
+  fill: rgba(45, 226, 192, 0.08);
+  stroke: #2de2c0;
+}
+
+.node.is-busy .node__sub {
+  fill: #2de2c0;
+}
+
+.node.is-busy .node__spin {
+  opacity: 1;
+  animation: spin 0.8s linear infinite;
+}
+
+.node.is-done rect {
+  stroke: rgba(45, 226, 192, 0.45);
+}
+
+.node.is-done .node__check {
+  opacity: 1;
+}
+
+.node.is-warn rect {
+  fill: rgba(255, 181, 71, 0.08);
+  stroke: #ffb547;
+}
+
+.node.is-warn .node__sub {
+  fill: #ffb547;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 899px) {
-  .viz {
-    aspect-ratio: 1;
+  .flow {
+    height: auto;
+    min-height: 0;
+  }
+
+  .flow__svg {
+    flex: none;
+    aspect-ratio: 480 / 590;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .flow__live i {
+    animation: none;
   }
 }
 
@@ -1258,6 +1446,8 @@ body::before {
 }
 
 .hero__role b {
+  display: block;
+  margin-bottom: 4px;
   font: 700 1.35rem var(--display);
   letter-spacing: 0.06em;
   color: var(--fg);
@@ -1559,5 +1749,28 @@ body::before {
 @media (prefers-reduced-motion: reduce) {
   .job__live i {
     animation: none;
+  }
+}
+
+/* phones: the diagram scales down, so show bigger names and drop the tiny per-agent statuses */
+@media (max-width: 600px) {
+  .flow {
+    padding: 12px 10px;
+  }
+
+  .node__label {
+    font-size: 19px;
+  }
+
+  .node:not(:first-child) .node__label {
+    transform: translateY(8px);
+  }
+
+  .node:not(:first-child) .node__sub {
+    display: none;
+  }
+
+  .node:first-child .node__sub {
+    font-size: 13px;
   }
 }
