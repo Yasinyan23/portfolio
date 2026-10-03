@@ -3,8 +3,8 @@ import { jobs, profile, projects, stack, stats } from "./content";
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ENTITIES[c]);
 
-const ext = (href: string, label: string) =>
-  `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}</a>`;
+const ext = (href: string, label: string, icon = "") =>
+  `<a href="${esc(href)}" target="_blank" rel="noopener">${esc(label)}${icon ? ` <span aria-hidden="true">${icon}</span>` : ""}</a>`;
 
 export const formatStat = (value: number, prefix = "", suffix = "") =>
   `${prefix}${Math.round(value).toLocaleString("en-US")}${suffix}`;
@@ -18,7 +18,7 @@ export function render(root: HTMLElement): void {
       <a href="#experience">Experience</a>
       <a href="#about">About</a>
       <a href="#contact">Contact</a>
-      <a class="nav__cv" href="${esc(profile.cv)}" target="_blank" rel="noopener">CV ↓</a>
+      <a class="nav__cv" href="${esc(profile.cv)}" download>CV <span aria-hidden="true">↓</span></a>
     </nav>
   </header>
 
@@ -32,8 +32,8 @@ export function render(root: HTMLElement): void {
           .join(" ")}</h1>
         <p class="hero__intro">${esc(profile.intro)}</p>
         <div class="hero__cta">
-          <a class="btn" href="#projects">See my work ↓</a>
-          <a class="btn btn--ghost" href="${esc(profile.cv)}" target="_blank" rel="noopener">Download CV</a>
+          <a class="btn" href="#projects">See my work <span aria-hidden="true">↓</span></a>
+          <a class="btn btn--ghost" href="${esc(profile.cv)}" download>Download CV</a>
         </div>
       </div>
       <pre class="term" aria-hidden="true"><code>${profile.terminal
@@ -51,8 +51,8 @@ export function render(root: HTMLElement): void {
         .map(
           (s) => `
         <div class="stat reveal">
-          <span class="stat__value" data-value="${s.value}" data-prefix="${esc(s.prefix ?? "")}" data-suffix="${esc(s.suffix ?? "")}">${esc(formatStat(s.value, s.prefix, s.suffix))}</span>
-          <span class="stat__label">${esc(s.label)}</span>
+          <span class="stat__value" aria-hidden="true" data-value="${s.value}" data-prefix="${esc(s.prefix ?? "")}" data-suffix="${esc(s.suffix ?? "")}">${esc(formatStat(s.value, s.prefix, s.suffix))}</span>
+          <span class="stat__label"><span class="sr-only">${esc(formatStat(s.value, s.prefix, s.suffix))} </span>${esc(s.label)}</span>
         </div>`,
         )
         .join("")}
@@ -90,7 +90,7 @@ export function render(root: HTMLElement): void {
             <p class="card__label">What I did</p>
             <ul class="highlights">${p.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
             <ul class="tags">${p.stack.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-            ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, `${l.label} ↗`)).join("")}</p>` : ""}
+            ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, l.label, "↗")).join("")}</p>` : ""}
           </div>
         </article>`,
         )

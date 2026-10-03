@@ -2,7 +2,7 @@
   --bg: #08080c;
   --fg: #f1f1f6;
   --text: #d4d4de;
-  --muted: #aaaabd;
+  --muted: #aeaec1;
   --line: rgba(255, 255, 255, 0.09);
   --glass: rgba(255, 255, 255, 0.035);
   --accent: #7c5cff;
@@ -107,7 +107,6 @@ h2 {
   padding: 14px max(20px, calc((100% - 1040px) / 2));
   background: rgba(8, 8, 12, 0.6);
   backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
 }
 
@@ -140,7 +139,7 @@ h2 {
 }
 
 @media (max-width: 640px) {
-  .nav nav a:not(.nav__cv) {
+  .nav nav a:not(.nav__cv):not([href="#contact"]) {
     display: none;
   }
 }
@@ -348,6 +347,17 @@ section {
   color: var(--muted);
   font-size: 0.9rem;
   line-height: 1.4;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 /* ---------- marquee ---------- */
@@ -684,6 +694,10 @@ section {
 
   .btn:hover {
     transform: none;
+  }
+
+  .marquee {
+    mask-image: none;
   }
 
   .marquee__track {

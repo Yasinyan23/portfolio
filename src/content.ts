@@ -53,7 +53,7 @@ export const profile = {
 export const stats: Stat[] = [
   { value: 229, prefix: "#", label: "LeetCode global rank" },
   { value: 3276, label: "LeetCode problems solved" },
-  { value: 20, suffix: "k+", label: "plays/day through my CV pipeline" },
+  { value: 20, suffix: "k+", label: "plays/day through my computer-vision pipeline" },
   { value: 8, suffix: "+", label: "years shipping software" },
 ];
 
@@ -233,7 +233,7 @@ export const jobs: Job[] = [
     role: "Senior AI Software Engineer — AI Platform & Product",
     period: "Feb 2026 — Present",
     summary:
-      "Own the production AI systems that turn match video into biomechanics insights: CV models, 3D body reconstruction, serving on 30 inference workers, 20k+ plays/day. Patent co-inventor.",
+      "Own the production AI systems that turn match video into biomechanics insights: computer-vision models, 3D body reconstruction, serving on 30 inference workers, 20k+ plays/day. Patent co-inventor.",
   },
   {
     company: "Nexa Product Labs",
