@@ -5,7 +5,7 @@ import { initMotion } from "./motion";
 import { initSkeleton } from "./skeleton";
 import { initCase } from "./case";
 import { initCommands } from "./commands";
-import { initAttention, initCursor, initTheme } from "./interactions";
+import { initAttention, initMagnetic, initTheme } from "./interactions";
 
 const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
 
@@ -20,5 +20,5 @@ const toggleTheme = initTheme(reduce);
 const openCase = initCase(reduce);
 initCommands({ openCase, toggleTheme }, reduce);
 initAttention(profile.attention);
-if (!reduce) initCursor();
+if (!reduce) initMagnetic();
 initMotion(reduce);

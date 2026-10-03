@@ -32,26 +32,9 @@ export function initTheme(reduce: boolean): () => void {
   return toggle;
 }
 
-// Small follower ring that grows over interactive elements, + magnetic buttons. Fine pointers only.
-export function initCursor(): void {
+// Buttons lean toward the pointer. Fine pointers only.
+export function initMagnetic(): void {
   if (!matchMedia("(hover: hover) and (pointer: fine)").matches) return;
-  const ring = document.createElement("div");
-  ring.className = "cursor";
-  ring.setAttribute("aria-hidden", "true");
-  document.body.append(ring);
-  const x = gsap.quickTo(ring, "x", { duration: 0.1, ease: "power2" });
-  const y = gsap.quickTo(ring, "y", { duration: 0.1, ease: "power2" });
-
-  addEventListener("pointermove", (e) => {
-    x(e.clientX);
-    y(e.clientY);
-    ring.classList.add("is-on");
-  });
-  document.documentElement.addEventListener("pointerleave", () => ring.classList.remove("is-on"));
-  document.addEventListener("pointerover", (e) => {
-    ring.classList.toggle("is-link", !!(e.target as Element).closest?.("a, button, .card, canvas"));
-  });
-
   document.querySelectorAll<HTMLElement>("[data-magnetic], .socials a").forEach((el) => {
     const mx = gsap.quickTo(el, "x", { duration: 0.4, ease: "power3" });
     const my = gsap.quickTo(el, "y", { duration: 0.4, ease: "power3" });

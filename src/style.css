@@ -1163,39 +1163,6 @@ html:has(dialog[open]) {
   border-top: 1px solid var(--line);
 }
 
-/* ---------- cursor ---------- */
-
-.cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  z-index: 100;
-  width: 18px;
-  height: 18px;
-  margin: -9px 0 0 -9px;
-  border: 1.5px solid var(--accent-2);
-  border-radius: 50%;
-  pointer-events: none;
-  opacity: 0;
-  transition:
-    width 0.2s,
-    height 0.2s,
-    margin 0.2s,
-    background-color 0.2s,
-    opacity 0.2s;
-}
-
-.cursor.is-on {
-  opacity: 0.8;
-}
-
-.cursor.is-link {
-  width: 32px;
-  height: 32px;
-  margin: -16px 0 0 -16px;
-  background-color: rgba(45, 226, 192, 0.08);
-}
-
 /* ---------- attention ---------- */
 
 .about__text .w {
