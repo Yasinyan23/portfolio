@@ -2,7 +2,7 @@
   --bg: #08080c;
   --fg: #f1f1f6;
   --text: #d4d4de;
-  --muted: #9a9aab;
+  --muted: #aaaabd;
   --line: rgba(255, 255, 255, 0.09);
   --glass: rgba(255, 255, 255, 0.035);
   --accent: #7c5cff;
@@ -104,7 +104,7 @@ h2 {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px max(20px, calc((100% - 1080px) / 2));
+  padding: 14px max(20px, calc((100% - 1040px) / 2));
   background: rgba(8, 8, 12, 0.6);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -257,6 +257,10 @@ section {
   box-shadow: 0 30px 80px -30px rgba(124, 92, 255, 0.5);
 }
 
+.term code {
+  font: inherit;
+}
+
 .term::before {
   content: "";
   position: absolute;
@@ -373,6 +377,7 @@ section {
 
 .marquee__track li::after {
   content: "✦";
+  content: "✦" / "";
   margin-left: 40px;
   color: var(--accent);
 }
@@ -441,7 +446,7 @@ section {
 }
 
 .card__org,
-.card dt,
+.card__label,
 .facts span {
   font: 500 0.75rem var(--mono);
   letter-spacing: 0.14em;
@@ -457,7 +462,7 @@ section {
   font-size: clamp(1.5rem, 3vw, 2rem);
 }
 
-.card__tagline {
+.card__summary {
   color: var(--muted);
   margin: 10px 0 28px;
 }
@@ -483,13 +488,31 @@ section {
   color: var(--muted);
 }
 
-.card dt {
+.card__label {
   color: var(--muted);
 }
 
-.card dd {
-  margin: 6px 0 20px;
+.highlights {
+  display: grid;
+  gap: 10px;
+  margin: 12px 0 24px;
+  list-style: none;
+}
+
+.highlights li {
+  position: relative;
+  padding-left: 20px;
   color: var(--text);
+}
+
+.highlights li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.8em;
+  width: 10px;
+  height: 2px;
+  background: var(--grad);
 }
 
 .tags {
@@ -657,6 +680,10 @@ section {
   body::before,
   .term__line--caret::after {
     animation: none;
+  }
+
+  .btn:hover {
+    transform: none;
   }
 
   .marquee__track {

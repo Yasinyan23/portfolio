@@ -7,9 +7,8 @@ export type Job = { company: string; role: string; period: string; summary: stri
 export type Project = {
   title: string;
   org: string;
-  tagline: string;
-  problem: string;
-  solution: string;
+  summary: string;
+  highlights: string[];
   metrics: Metric[];
   stack: string[];
   links: Link[];
@@ -80,76 +79,126 @@ export const stack: string[] = [
 
 export const projects: Project[] = [
   {
-    title: "Sprint biomechanics from match video",
-    org: "FitWise AI · 2026 — now",
-    tagline: "A computer-vision pipeline that turns ordinary match footage into 34 biomechanics metrics per gait cycle.",
-    problem:
-      "Coaches and sports scientists wanted sprint biomechanics without markers or a lab — straight from match video, and fast enough to act on the same day.",
-    solution:
-      "A multi-stage pipeline: player detection and tracking, per-frame 3D human body reconstruction with PyTorch and a parametric body model, gait-cycle segmentation aligned to toe-off, then 34 metrics per cycle. Long-lived inference workers load model weights once (~2.4 GiB each), so 30 of them share a single host. Results land in PostgreSQL as queryable per-cycle data. Co-inventor on the patent for the method.",
+    title: "Production Computer Vision & 3D Biomechanics Pipeline",
+    org: "FitWise AI · Computer Vision · PyTorch · Production AI",
+    summary:
+      "An end-to-end computer-vision pipeline that transforms sports match video into 3D human motion reconstruction and actionable biomechanics insights: player detection and tracking, per-frame body reconstruction, gait-cycle segmentation and 34 biomechanics metrics per cycle.",
+    highlights: [
+      "Evaluated, selected and fine-tuned computer-vision models for production inference.",
+      "Built preprocessing and postprocessing workflows for frames, player crops, keypoints, temporal smoothing and gait-phase detection.",
+      "Integrated model output into downstream analytics and product APIs.",
+      "Co-inventor on the patent for automated sprint biomechanics assessment from reconstructed 3D body motion.",
+    ],
     metrics: [
-      { value: "<3 min", label: "from upload to athlete insights" },
+      { value: "<3 min", label: "from video upload to athlete insights" },
+      { value: "34", label: "biomechanics metrics per gait cycle" },
+    ],
+    stack: ["Computer Vision", "PyTorch", "Deep Learning", "3D Human Motion Reconstruction", "Model Evaluation"],
+    links: [],
+  },
+  {
+    title: "Tool-Calling AI Agent for Credit Reviews",
+    org: "Nexa Product Labs · AI Agents · MCP · Workflow Automation",
+    summary:
+      "A tool-calling AI agent for manual credit reviews that pulls applicant profiles, bureau reports, score explanations and credit-policy retrieval through internal APIs exposed via an MCP server.",
+    highlights: [
+      "Implemented tool calling, policy retrieval, recommendation drafting, guardrails and PII redaction.",
+      "Added mandatory human approval to keep credit decisions under human control.",
+      "Integrated agent workflows into existing credit-decisioning processes.",
+    ],
+    metrics: [
+      { value: "−52%", label: "manual-review handling time" },
+      { value: "100%", label: "of decisions signed off by a human" },
+    ],
+    stack: ["AI Agents", "Tool Calling", "MCP", "LLM Engineering", "Prompt Engineering", "API Integration"],
+    links: [],
+  },
+  {
+    title: "Scalable AI Inference & Model Serving",
+    org: "FitWise AI · Model Serving · GCP · Distributed Processing",
+    summary:
+      "Asynchronous inference infrastructure for production computer-vision workloads: long-lived PyTorch inference workers with Celery, RabbitMQ, Docker Compose and Google Cloud.",
+    highlights: [
+      "Scaled processing to 30 inference workers on an 80-vCPU GCP instance.",
+      "Implemented retries, backoff, processing status, recovery and reprocessing mechanisms.",
+      "Optimized worker memory usage and model lifecycle for sustained production workloads.",
+    ],
+    metrics: [
       { value: "20k+", label: "plays processed per day" },
-      { value: "20M+", label: "biomechanics samples stored" },
+      { value: "~68k", label: "historical plays reprocessed in ~3 days" },
+      { value: "30", label: "inference workers on one 80-vCPU host" },
     ],
-    stack: ["PyTorch", "Computer vision", "3D reconstruction", "Celery", "RabbitMQ", "PostgreSQL", "GCP"],
+    stack: ["Model Serving", "Inference Optimization", "Python", "Celery", "RabbitMQ", "GCP"],
     links: [],
   },
   {
-    title: "LLM underwriting copilot",
-    org: "Nexa Product Labs · 2023 — 2026",
-    tagline: "RAG plus a tool-calling agent that drafts credit-review recommendations for risk analysts.",
-    problem:
-      "Manual credit reviews were slow: for every application analysts dug through credit policies, bureau reports and past cases by hand.",
-    solution:
-      "RAG over credit policies and historical cases with pgvector, hybrid keyword + embedding search and re-ranking; structured JSON outputs validated against Pydantic schemas before they reach the decision engine. A tool-calling agent reaches applicant profiles, bureau reports and score explanations through internal APIs exposed as an MCP server — with guardrails, PII redaction and mandatory human approval.",
+    title: "Document Intelligence & LLM Evaluation Framework",
+    org: "Nexa Product Labs · Document AI · Evaluation · Production LLMs",
+    summary:
+      "Document-understanding and LLM evaluation workflows for financial underwriting, combining schema-validated extraction with labeled test datasets, production traces and automated regression checks.",
+    highlights: [
+      "Extracted structured fields from bank statements, payslips and identity documents; routed low-confidence fields to human review.",
+      "Built an evaluation framework around 1,700 labeled cases and sampled production traces.",
+      "Measured field-level accuracy, retrieval recall@k and groundedness calibrated against analyst ratings.",
+      "Added CI regression gates and production drift monitoring.",
+      "Optimized model routing to cut AI cost per case while keeping 3.8-second p95 latency.",
+    ],
     metrics: [
-      { value: "−52%", label: "review handling time" },
-      { value: "50–70k", label: "requests/day on the platform" },
+      { value: "96%", label: "field-level accuracy on a held-out set" },
+      { value: "1,700", label: "labeled evaluation cases" },
+      { value: "−45%", label: "AI cost per case" },
     ],
-    stack: ["OpenAI", "Anthropic", "RAG", "pgvector", "MCP", "Pydantic", "FastAPI"],
+    stack: ["Document Intelligence", "LLM Evaluation", "RAG", "Model Benchmarking", "OpenAI API", "Anthropic API", "Langfuse"],
     links: [],
   },
   {
-    title: "Document intelligence with an eval gate",
-    org: "Nexa Product Labs · 2023 — 2026",
-    tagline: "Schema-validated extraction from bank statements, payslips and IDs — protected by a CI quality gate.",
-    problem:
-      "The scoring engine needed reliable fields from messy documents, and every prompt or model change risked silently degrading quality.",
-    solution:
-      "Extraction workflows return schema-validated fields and route low-confidence ones to human review. An evaluation framework over a 1,700-case golden set plus sampled production traces measures field-level accuracy, retrieval recall@k and LLM-as-judge groundedness calibrated against analyst ratings. A CI regression gate blocks prompt or model changes that lower quality, and eval results drive model routing — simpler cases go to a smaller model.",
-    metrics: [
-      { value: "96%", label: "field-level accuracy" },
-      { value: "1,700", label: "labeled golden cases" },
-      { value: "−45%", label: "AI cost per case at 3.8 s p95" },
+    title: "AI Inference Optimization & Biomechanics Analytics",
+    org: "FitWise AI · Performance Engineering · AI Evaluation",
+    summary:
+      "Optimized CPU-based inference and turned 3D motion model outputs into validated, queryable biomechanics data for athlete-level analytics, cohort comparisons and left/right asymmetry analysis.",
+    highlights: [
+      "Diagnosed PyTorch thread oversubscription under production load and tuned OMP/MKL and PyTorch thread pools.",
+      "Optimized worker I/O with SSD persistent disks.",
+      "Built validation workflows comparing new per-cycle metrics with legacy output — zero mismatches on production data.",
+      "Developed completeness logging and human-in-the-loop review workflows for model output.",
     ],
-    stack: ["LLMs", "Structured outputs", "Pydantic", "Langfuse", "OpenTelemetry", "CI/CD"],
-    links: [],
-  },
-  {
-    title: "Fleet-scale CPU inference tuning",
-    org: "FitWise AI · 2026 — now",
-    tagline: "Why 30 inference workers on 80 vCPUs were crawling — and how they got 30–40% faster.",
-    problem:
-      "Throughput stalled under full production load while the historical catalog was being reprocessed: load average hit ~837 on an 80-core GCP instance.",
-    solution:
-      "Traced it to PyTorch thread oversubscription — every worker spinning up a full-width intra-op pool. Tuned OMP/MKL and PyTorch thread pools per worker, moved workers to SSD persistent disks to remove I/O stalls, and kept RabbitMQ late acks, retries and backoff so no play was lost mid-run.",
     metrics: [
       { value: "+30–40%", label: "inference throughput" },
-      { value: "~68k", label: "plays reprocessed in ~3 days" },
-      { value: "30", label: "workers on a single host" },
+      { value: "0", label: "mismatches against legacy metrics" },
+      { value: "20M+", label: "metric samples in PostgreSQL" },
     ],
-    stack: ["PyTorch", "Profiling", "Celery", "RabbitMQ", "Docker", "GCP"],
+    stack: ["Inference Optimization", "Model Evaluation", "Performance Optimization", "PostgreSQL", "AI Quality Assurance"],
     links: [],
   },
   {
-    title: "DocuQuery RAG agent",
-    org: "Open source",
-    tagline: "A strictly grounded RAG microservice: cited answers, or a deterministic refusal.",
-    problem:
-      "Naive RAG hallucinates, stuffs whole documents into the prompt and produces answers nobody can audit.",
-    solution:
-      "A clean-architecture FastAPI service: multi-format ingestion (PDF, DOCX, XLSX, CSV, HTML, Markdown) with token sliding-window chunking, ChromaDB retrieval with a score threshold, and a fast-path refusal that never calls the LLM when nothing relevant is found. A token-budget manager packs chunks under a hard ceiling, every answer carries source citations, responses stream over SSE, and every query lands in an audit trail.",
+    title: "LLM-Powered Credit Decisioning Platform",
+    org: "Nexa Product Labs · LLM Engineering · FinTech",
+    summary:
+      "Led AI and backend engineering for high-volume credit-decisioning workflows, introducing LLM-powered underwriting alongside scalable Python/FastAPI services.",
+    highlights: [
+      "Built LLM features on OpenAI and Anthropic models: RAG over credit policies and historical cases, pgvector, hybrid search and re-ranking.",
+      "Integrated structured JSON outputs validated with Pydantic schemas into decision workflows.",
+      "Helped increase platform throughput by approximately 45%.",
+    ],
+    metrics: [
+      { value: "−80%", label: "overall decision time" },
+      { value: "60%+", label: "fewer manual reviews" },
+      { value: "50–70k", label: "requests per day" },
+    ],
+    stack: ["LLMs", "RAG", "Python", "FastAPI", "pgvector", "Distributed Systems"],
+    links: [],
+  },
+  {
+    title: "DocuQuery RAG Agent",
+    org: "Open source · RAG · FastAPI",
+    summary:
+      "A strictly grounded RAG microservice: every answer carries source citations, or the service returns a deterministic refusal.",
+    highlights: [
+      "Multi-format ingestion (PDF, DOCX, XLSX, CSV, HTML, Markdown) with token sliding-window chunking.",
+      "Score-thresholded ChromaDB retrieval and a fast-path refusal that never calls the LLM when nothing relevant is found.",
+      "Token-budget manager packs chunks under a hard ceiling; SSE streaming, full async I/O and a SQLite audit trail.",
+      "Clean architecture with dependency inversion, covered by 160 tests in CI.",
+    ],
     metrics: [
       { value: "160", label: "tests passing" },
       { value: "6", label: "document formats" },
@@ -159,13 +208,16 @@ export const projects: Project[] = [
     links: [{ label: "Code", href: "https://github.com/Yasinyan23/rag-agent" }],
   },
   {
-    title: "AI moderation API",
-    org: "Open source",
-    tagline: "Bring-your-own-key content moderation across Claude, GPT-4o and Gemini.",
-    problem:
-      "Apps need moderation without handing their AI spend — or their API keys — to a third party, and without paying for inference on users who are already banned.",
-    solution:
-      "One provider interface with Claude, OpenAI and Gemini implementations resolved per request. Provider keys are encrypted with Fernet and decrypted only inside the request. JWT access tokens are hashed into a server-side session table, so logout really revokes them. A five-strike pipeline flags repeat offenders, and flagged users are blocked before any AI call is made.",
+    title: "AI Moderation API",
+    org: "Open source · LLM APIs · Security",
+    summary:
+      "Bring-your-own-key content moderation across Claude, GPT-4o and Gemini, with a persistent strike pipeline for repeat offenders.",
+    highlights: [
+      "One provider interface with Claude, OpenAI and Gemini implementations resolved per request.",
+      "Provider API keys encrypted with Fernet and decrypted only inside the request cycle.",
+      "JWT access tokens hashed into a server-side session table, so logout really revokes them.",
+      "Flagged users are blocked before any AI call is made.",
+    ],
     metrics: [
       { value: "3", label: "AI providers behind one interface" },
       { value: "5", label: "strikes to a permanent flag" },

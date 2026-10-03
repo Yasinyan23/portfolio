@@ -76,7 +76,7 @@ export function render(root: HTMLElement): void {
           <div class="card__head">
             <p class="card__org">${esc(p.org)}</p>
             <h3>${esc(p.title)}</h3>
-            <p class="card__tagline">${esc(p.tagline)}</p>
+            <p class="card__summary">${esc(p.summary)}</p>
             <ul class="metrics">
               ${p.metrics
                 .map(
@@ -87,10 +87,8 @@ export function render(root: HTMLElement): void {
             </ul>
           </div>
           <div class="card__body">
-            <dl>
-              <dt>Problem</dt><dd>${esc(p.problem)}</dd>
-              <dt>Solution</dt><dd>${esc(p.solution)}</dd>
-            </dl>
+            <p class="card__label">What I did</p>
+            <ul class="highlights">${p.highlights.map((h) => `<li>${esc(h)}</li>`).join("")}</ul>
             <ul class="tags">${p.stack.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
             ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, `${l.label} ↗`)).join("")}</p>` : ""}
           </div>
