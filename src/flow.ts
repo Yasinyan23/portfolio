@@ -1,3 +1,6 @@
+import { ensureGlyphs, glyph, svgEl } from "./svg";
+import type { Icon } from "./svg";
+
 // A stream of requests through four agent systems — Junior, Mid, Senior, Staff — and then the
 // release path to production. Higher grades add parallelism, routing, caching, quality gates and
 // safer rollouts (registry, k8s, canary + monitoring). Packets are little files, folders, code,
@@ -5,8 +8,7 @@
 
 type Tier = "S" | "L"; // small / large model: packet colour and cost
 type Tone = "" | Tier | "fix" | "bad" | "cache" | "ops";
-type Icon = "file" | "code" | "folder" | "zip" | "box" | "chart" | "bug" | "fix" | "bolt" | "check";
-type Spec = { id: string; x: number; y: number; w: number; label: string; sub?: string; h?: number; kind?: "tool" | "sm"; tier?: Tier; cap?: number; pods?: number };
+type Spec = { id: string; x: number; y: number; w: number; label: string; sub?: string; h?: number; kind?: "tool" | "sm"; tier?: Tier; cap?: number; pods?: number; tip?: string };
 type EdgeKind = "v" | "h" | "side";
 type Req = { bad: boolean; dropped: boolean };
 type NodeState = "" | "busy" | "done" | "warn" | "fail";
@@ -45,7 +47,7 @@ type Mode = {
 };
 
 const H = 40;
-const TASK: Spec = { id: "task", x: 80, y: 10, w: 320, label: "Task", sub: "› waiting" };
+const TASK: Spec = { id: "task", x: 80, y: 10, w: 320, label: "Task", sub: "› waiting", tip: "A stream of requests for the same task" };
 const TITLES = ["Add RAG endpoint with citations", "Cut inference latency by 30%", "Ship document extraction v2", "Fix flaky eval in CI"];
 
 const MODES: Mode[] = [
@@ -58,9 +60,9 @@ const MODES: Mode[] = [
     seed: 1,
     nodes: [
       TASK,
-      { id: "llm", x: 140, y: 150, w: 200, label: "LLM", sub: "one big prompt", tier: "L", cap: 1 },
-      { id: "out", x: 140, y: 290, w: 200, label: "Output", sub: "waiting" },
-      { id: "server", x: 140, y: 430, w: 200, label: "prod server", sub: "scp by hand" },
+      { id: "llm", x: 140, y: 150, w: 200, label: "LLM", sub: "one big prompt", tier: "L", cap: 1, tip: "One big prompt does everything: no tools, no checks, one at a time" },
+      { id: "out", x: 140, y: 290, w: 200, label: "Output", sub: "waiting", tip: "What reaches users. Red = bugs shipped" },
+      { id: "server", x: 140, y: 430, w: 200, label: "prod server", sub: "scp by hand", tip: "Copied over by hand: no image, no rollback" },
     ],
     edges: [["task", "llm"], ["llm", "out"], ["out", "server"]],
     async flow(r, s) {
@@ -88,14 +90,14 @@ const MODES: Mode[] = [
     seed: 5,
     nodes: [
       TASK,
-      { id: "agent", x: 140, y: 110, w: 200, label: "Agent", sub: "effort · medium", tier: "L", cap: 2 },
-      { id: "search", x: 14, y: 98, w: 84, h: 26, label: "search", kind: "tool", cap: 4 },
-      { id: "db", x: 14, y: 140, w: 84, h: 26, label: "db", kind: "tool", cap: 4 },
-      { id: "tests", x: 382, y: 119, w: 84, h: 26, label: "run tests", kind: "tool", cap: 4 },
-      { id: "review", x: 140, y: 220, w: 200, label: "Reviewer", sub: "one pass", tier: "L", cap: 1 },
-      { id: "out", x: 140, y: 330, w: 200, label: "Output", sub: "waiting" },
-      { id: "docker", x: 40, y: 450, w: 170, label: "docker build", sub: "Dockerfile" },
-      { id: "vm", x: 270, y: 450, w: 170, label: "VM", sub: "single host" },
+      { id: "agent", x: 140, y: 110, w: 200, label: "Agent", sub: "effort · medium", tier: "L", cap: 2, tip: "An agent that calls tools and drafts the change" },
+      { id: "search", x: 14, y: 98, w: 84, h: 26, label: "search", kind: "tool", cap: 4, tip: "Tool call: can fail and gets retried" },
+      { id: "db", x: 14, y: 140, w: 84, h: 26, label: "db", kind: "tool", cap: 4, tip: "Tool call: can fail and gets retried" },
+      { id: "tests", x: 382, y: 119, w: 84, h: 26, label: "run tests", kind: "tool", cap: 4, tip: "Tool call: can fail and gets retried" },
+      { id: "review", x: 140, y: 220, w: 200, label: "Reviewer", sub: "one pass", tier: "L", cap: 1, tip: "A single reviewer: a bottleneck that still misses bugs" },
+      { id: "out", x: 140, y: 330, w: 200, label: "Output", sub: "waiting", tip: "What reaches users. Red = bugs shipped" },
+      { id: "docker", x: 40, y: 450, w: 170, label: "docker build", sub: "Dockerfile", tip: "Builds a container image layer by layer" },
+      { id: "vm", x: 270, y: 450, w: 170, label: "VM", sub: "single host", tip: "One host, no redundancy" },
     ],
     edges: [
       ["task", "agent"], ["agent", "search", "h"], ["agent", "db", "h"], ["agent", "tests", "h"],
@@ -148,15 +150,15 @@ const MODES: Mode[] = [
     seed: 1,
     nodes: [
       TASK,
-      { id: "orch", x: 155, y: 84, w: 170, label: "Orchestrator", sub: "effort · high", tier: "L", cap: 3 },
-      { id: "plan", x: 40, y: 158, w: 150, label: "Planner", sub: "effort · low", tier: "L", cap: 2 },
-      { id: "rag", x: 290, y: 158, w: 150, label: "Retriever", sub: "RAG · MCP", tier: "L", cap: 2 },
-      { id: "code", x: 165, y: 232, w: 150, label: "Coder", sub: "effort · medium", tier: "L", cap: 2 },
-      { id: "review", x: 165, y: 306, w: 150, label: "Reviewer", sub: "effort · medium", tier: "L", cap: 2 },
-      { id: "out", x: 165, y: 380, w: 150, label: "Output", sub: "waiting" },
-      { id: "docker", x: 14, y: 480, w: 130, label: "docker", sub: "Dockerfile" },
-      { id: "registry", x: 165, y: 480, w: 130, label: "registry", sub: "images" },
-      { id: "k8s", x: 316, y: 472, w: 150, h: 56, label: "k8s · prod", sub: "3 pods", pods: 3 },
+      { id: "orch", x: 155, y: 84, w: 170, label: "Orchestrator", sub: "effort · high", tier: "L", cap: 3, tip: "Splits the task and coordinates the agents" },
+      { id: "plan", x: 40, y: 158, w: 150, label: "Planner", sub: "effort · low", tier: "L", cap: 2, tip: "Breaks the task into steps" },
+      { id: "rag", x: 290, y: 158, w: 150, label: "Retriever", sub: "RAG · MCP", tier: "L", cap: 2, tip: "Pulls docs and context (RAG, MCP tools); retries on errors" },
+      { id: "code", x: 165, y: 232, w: 150, label: "Coder", sub: "effort · medium", tier: "L", cap: 2, tip: "Writes the change" },
+      { id: "review", x: 165, y: 306, w: 150, label: "Reviewer", sub: "effort · medium", tier: "L", cap: 2, tip: "Catches defects and sends them back for a fix" },
+      { id: "out", x: 165, y: 380, w: 150, label: "Output", sub: "waiting", tip: "What reaches users" },
+      { id: "docker", x: 14, y: 480, w: 130, label: "docker", sub: "Dockerfile", tip: "Builds the container image" },
+      { id: "registry", x: 165, y: 480, w: 130, label: "registry", sub: "images", tip: "Stores versioned images" },
+      { id: "k8s", x: 316, y: 472, w: 150, h: 56, label: "k8s · prod", sub: "3 pods", pods: 3, tip: "Rolls new pods out one by one" },
     ],
     edges: [
       ["task", "orch"], ["orch", "plan"], ["orch", "rag"], ["plan", "code"], ["rag", "code"], ["code", "review"],
@@ -223,21 +225,21 @@ const MODES: Mode[] = [
     seed: 2,
     nodes: [
       TASK,
-      { id: "router", x: 165, y: 72, w: 150, label: "Router", sub: "model routing", tier: "L", cap: 4 },
-      { id: "cache", x: 356, y: 79, w: 92, h: 26, label: "cache", kind: "tool", cap: 6 },
-      { id: "plan", x: 12, y: 136, w: 104, label: "Planner", sub: "small LLM", kind: "sm", tier: "S", cap: 3 },
-      { id: "rag", x: 128, y: 136, w: 104, label: "RAG", sub: "MCP tools", kind: "sm", tier: "S", cap: 3 },
-      { id: "codeL", x: 244, y: 136, w: 104, label: "Coder L", sub: "large LLM", kind: "sm", tier: "L", cap: 2 },
-      { id: "codeS", x: 360, y: 136, w: 104, label: "Coder S", sub: "small LLM", kind: "sm", tier: "S", cap: 3 },
-      { id: "tester", x: 60, y: 200, w: 150, label: "Tester", sub: "unit + e2e", tier: "S", cap: 3 },
-      { id: "guard", x: 270, y: 200, w: 150, label: "Guardrails", sub: "PII · policy", tier: "S", cap: 3 },
-      { id: "review", x: 165, y: 264, w: 150, label: "Reviewer", sub: "effort · high", tier: "L", cap: 2 },
-      { id: "evals", x: 165, y: 328, w: 150, label: "Evals", sub: "golden set", tier: "S", cap: 3 },
-      { id: "final", x: 165, y: 392, w: 150, label: "Final gate", sub: "effort · max", tier: "L", cap: 2 },
-      { id: "docker", x: 8, y: 480, w: 96, label: "docker", sub: "Dockerfile", kind: "sm" },
-      { id: "registry", x: 114, y: 480, w: 96, label: "registry", sub: "images", kind: "sm" },
-      { id: "k8s", x: 220, y: 472, w: 150, h: 56, label: "k8s · prod", sub: "6 pods", pods: 6 },
-      { id: "monitor", x: 380, y: 480, w: 92, label: "monitor", sub: "SLO", kind: "sm" },
+      { id: "router", x: 165, y: 72, w: 150, label: "Router", sub: "model routing", tier: "L", cap: 4, tip: "Simple requests to a small model, hard ones to a large one" },
+      { id: "cache", x: 356, y: 79, w: 92, h: 26, label: "cache", kind: "tool", cap: 6, tip: "Cache hits skip the whole pipeline" },
+      { id: "plan", x: 12, y: 136, w: 104, label: "Planner", sub: "small LLM", kind: "sm", tier: "S", cap: 3, tip: "Breaks hard tasks into steps" },
+      { id: "rag", x: 128, y: 136, w: 104, label: "RAG", sub: "MCP tools", kind: "sm", tier: "S", cap: 3, tip: "Pulls docs and context via MCP tools" },
+      { id: "codeL", x: 244, y: 136, w: 104, label: "Coder L", sub: "large LLM", kind: "sm", tier: "L", cap: 2, tip: "Large model for hard cases" },
+      { id: "codeS", x: 360, y: 136, w: 104, label: "Coder S", sub: "small LLM", kind: "sm", tier: "S", cap: 3, tip: "Small, cheap model for simple cases" },
+      { id: "tester", x: 60, y: 200, w: 150, label: "Tester", sub: "unit + e2e", tier: "S", cap: 3, tip: "Unit + e2e tests gate every change" },
+      { id: "guard", x: 270, y: 200, w: 150, label: "Guardrails", sub: "PII · policy", tier: "S", cap: 3, tip: "PII redaction and policy checks" },
+      { id: "review", x: 165, y: 264, w: 150, label: "Reviewer", sub: "effort · high", tier: "L", cap: 2, tip: "High-effort code review" },
+      { id: "evals", x: 165, y: 328, w: 150, label: "Evals", sub: "golden set", tier: "S", cap: 3, tip: "Golden-set evals block quality regressions" },
+      { id: "final", x: 165, y: 392, w: 150, label: "Final gate", sub: "effort · max", tier: "L", cap: 2, tip: "Last high-effort gate before release" },
+      { id: "docker", x: 8, y: 480, w: 96, label: "docker", sub: "Dockerfile", kind: "sm", tip: "Builds the container image" },
+      { id: "registry", x: 114, y: 480, w: 96, label: "registry", sub: "images", kind: "sm", tip: "Signed, versioned images" },
+      { id: "k8s", x: 220, y: 472, w: 150, h: 56, label: "k8s · prod", sub: "6 pods", pods: 6, tip: "Canary first, then a full rollout" },
+      { id: "monitor", x: 380, y: 480, w: 92, label: "monitor", sub: "SLO", kind: "sm", tip: "Watches SLOs during the canary" },
     ],
     edges: [
       ["task", "router"], ["router", "cache", "h"], ["cache", "final", "side"],
@@ -329,34 +331,6 @@ const PRICE: Record<Tier, number> = { S: 1e-6, L: 6e-6 }; // $ per token
 const ABORT = Symbol("abort");
 // seeds are picked so quality climbs by level: Junior 40% · Mid 71% · Senior 89% · Staff 100%
 
-// 16×16 glyphs for packets and pods; fill is currentColor, details in dark ink
-const INK = "#0c0c12";
-const GLYPHS: Record<Icon | "pod", string> = {
-  file: `<path d="M3.5 1.5h6l3 3v10h-9z"/><path d="M9.5 1.5v3h3" fill="none" stroke="${INK}"/>`,
-  code: `<path d="M3.5 1.5h6l3 3v10h-9z"/><path d="M7 8 5.5 9.75 7 11.5M9 8l1.5 1.75L9 11.5" fill="none" stroke="${INK}" stroke-width="1.2"/>`,
-  folder: `<path d="M1.5 4h5l1.5 1.5h6.5v8h-13z"/>`,
-  zip: `<path d="M2.5 2.5h11v11h-11z"/><path d="M8 2.5v7.5" stroke="${INK}" stroke-dasharray="1.3 1.3"/><rect x="6.8" y="10" width="2.4" height="2.4" fill="${INK}"/>`,
-  box: `<rect x="1.5" y="4" width="13" height="9" rx="1.5"/><path d="M5 4v9M8 4v9M11 4v9" stroke="${INK}" stroke-width=".9"/>`,
-  chart: `<path d="M2 14V9h3v5zM6.5 14V5h3v9zM11 14V2h3v12z"/>`,
-  bug: `<ellipse cx="8" cy="9" rx="4" ry="5"/><path d="M8 4V2M4.2 6.5 1.8 5M11.8 6.5 14.2 5M4 10H1.5M12 10h2.5M4.6 12.8 2.5 14.5M11.4 12.8l2.1 1.7" stroke="currentColor" stroke-width="1.3" fill="none"/>`,
-  fix: `<path d="M13 8a5 5 0 1 1-1.47-3.54" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M14.5 1.5v5h-5z"/>`,
-  bolt: `<path d="M9.5 1 3 9.5h4.5L6.5 15 13 6.5H8.5z"/>`,
-  check: `<circle cx="8" cy="8" r="6.5"/><path d="m5 8.2 2 2 4-4.2" fill="none" stroke="${INK}" stroke-width="1.7"/>`,
-  pod: `<path d="M8 1l6 3.5v7L8 15l-6-3.5v-7z"/>`,
-};
-
-const NS = "http://www.w3.org/2000/svg";
-const svgEl = <K extends keyof SVGElementTagNameMap>(tag: K, attrs: Record<string, string | number>, text?: string) => {
-  const e = document.createElementNS(NS, tag);
-  for (const [k, v] of Object.entries(attrs)) e.setAttribute(k, String(v));
-  if (text) e.textContent = text;
-  return e;
-};
-const glyph = (name: Icon | "pod", size: number, cls: string) => {
-  const u = svgEl("use", { width: size, height: size, class: cls });
-  u.setAttribute("href", `#g-${name}`);
-  return u;
-};
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
 // deterministic per-request randomness, so outcomes don't depend on animation timing
@@ -403,14 +377,29 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
   const caption = $(".flow__caption");
   const tabs = Array.from(root.querySelectorAll<HTMLButtonElement>(".flow__levels button"));
 
-  const defs = svgEl("defs", {});
-  defs.innerHTML = Object.entries(GLYPHS)
-    .map(([k, d]) => `<symbol id="g-${k}" viewBox="0 0 16 16" fill="currentColor">${d}</symbol>`)
-    .join("");
+  ensureGlyphs();
+
+  // hover a node to see what it does
+  const tip = root.querySelector<HTMLElement>(".flow__tip")!;
+  svg.addEventListener("pointerover", (e) => {
+    const g = (e.target as Element).closest<SVGGElement>(".node");
+    const text = g?.dataset.tip;
+    if (!g || !text) {
+      tip.hidden = true;
+      return;
+    }
+    const r = g.getBoundingClientRect();
+    const f = root.getBoundingClientRect();
+    tip.textContent = text;
+    tip.style.left = `${r.left - f.left + r.width / 2}px`;
+    tip.style.top = `${r.top - f.top}px`;
+    tip.hidden = false;
+  });
+  svg.addEventListener("pointerleave", () => (tip.hidden = true));
   const gEdges = svgEl("g", {});
   const gNodes = svgEl("g", {});
   const gFx = svgEl("g", {});
-  svg.append(defs, gEdges, gNodes, gFx);
+  svg.append(gEdges, gNodes, gFx);
 
   let mode = MODES[0];
   let specs: Record<string, Spec> = {};
@@ -621,6 +610,7 @@ export function initFlow(root: HTMLElement, reduce: boolean): void {
     mode.nodes.forEach((s, i) => {
       const h = s.h ?? H;
       const g = svgEl("g", { class: `node${s.kind ? ` node--${s.kind}` : ""}`, style: `--i: ${i}` });
+      if (s.tip) g.dataset.tip = s.tip;
       g.append(svgEl("rect", { x: s.x, y: s.y, width: s.w, height: h, rx: s.kind === "tool" ? 8 : 12 }));
       let sub: SVGTextElement | null = null;
       const pods: SVGUseElement[] = [];

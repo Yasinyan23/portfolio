@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Refuse before you hallucinate — Khachatur Pepanyan</title>
+    <meta name="description" content="Design notes on DocuQuery, a strictly grounded RAG service: score thresholds with a refusal that never calls the LLM, a hard token budget and mandatory citations." />
+    <link rel="canonical" href="https://pepaniank.pages.dev/notes/grounded-rag/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Refuse before you hallucinate" />
+    <meta property="og:description" content="A strictly grounded RAG service: score thresholds, a hard token budget, mandatory citations — and refusals that cost zero tokens." />
+    <meta property="og:url" content="https://pepaniank.pages.dev/notes/grounded-rag/" />
+    <meta property="og:image" content="https://pepaniank.pages.dev/og.png?v=2" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#08080c" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/notes/note.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Refuse before you hallucinate",
+        "description": "Design notes on DocuQuery, a strictly grounded RAG service with score thresholds, a hard token budget and mandatory citations.",
+        "datePublished": "2026-10-04",
+        "author": { "@type": "Person", "name": "Khachatur Pepanyan", "url": "https://pepaniank.pages.dev/" },
+        "mainEntityOfPage": "https://pepaniank.pages.dev/notes/grounded-rag/"
+      }
+    </script>
+  </head>
+  <body>
+    <header class="top">
+      <a href="/">Khachatur Pepanyan</a>
+      <a href="/#notes">← All notes</a>
+    </header>
+
+    <main class="note">
+      <p class="kicker">Notes · RAG · open source · 5 min read</p>
+      <h1>Refuse before you <span>hallucinate</span></h1>
+      <p class="lede">
+        DocuQuery is a small open-source RAG service built around one rule: answer only from the retrieved documents, cite every claim,
+        and when the documents do not contain the answer — refuse, without ever calling the LLM.
+      </p>
+
+      <div class="stats">
+        <div><b>0</b>LLM calls on a refusal</div>
+        <div><b>6</b>document formats</div>
+        <div><b>160</b>tests in CI</div>
+      </div>
+
+      <h2>Three ways naive RAG fails</h2>
+      <ul>
+        <li><strong>Hallucinated answers</strong> — the model fills gaps with facts that are not in the retrieved context.</li>
+        <li><strong>Unbounded token costs</strong> — whole documents get stuffed into every prompt.</li>
+        <li><strong>Answers nobody can audit</strong> — no way to tell which source a sentence came from.</li>
+      </ul>
+      <p>DocuQuery addresses each one by design rather than by prompt wording alone.</p>
+
+      <h2>Refusal is a code path, not a prompt</h2>
+      <p>
+        Retrieved chunks are filtered by a similarity <strong>score threshold</strong>. If nothing passes, the service returns a fixed
+        refusal message immediately: no model call, zero tokens, zero chance of inventing an answer. The system prompt still forbids using
+        knowledge outside the context, but the cheapest hallucination is the call you never make.
+      </p>
+
+      <h2>A hard token budget</h2>
+      <p>
+        A token-budget manager packs chunks greedily by descending relevance score until it reaches a configured ceiling, counted with
+        tiktoken’s <code>cl100k_base</code> encoding. No query ever sends unbounded context, so cost per query is predictable — and the most relevant
+        evidence always makes it in first.
+      </p>
+
+      <h2>Citations you can follow</h2>
+      <p>
+        Every factual statement carries a <code>[Source: file, Section: heading]</code> citation, and every citation maps back to an exact
+        chunk with its source, section and chunk id. Ingestion keeps provenance native to each format: page numbers for PDF, headings for
+        DOCX and Markdown, sheet names for XLSX, plus CSV and cleaned-up HTML.
+      </p>
+
+      <pre>POST /api/v1/query
+  1. embed the question
+  2. retrieve top-k chunks (vector store, cosine)
+  3. drop chunks below the score threshold
+  4. nothing left?  → return the refusal, no LLM call
+  5. pack chunks into the token budget (best first)
+  6. build the grounded prompt, temperature 0
+  7. generate (or stream over SSE)
+  8. attach one citation per chunk used
+  9. log the query to the audit trail</pre>
+
+      <h2>The boring engineering that makes it production-shaped</h2>
+      <ul>
+        <li>Clean architecture: routes depend on interfaces, so swapping the vector store touches one adapter.</li>
+        <li>Fully async I/O; the one synchronous driver is offloaded with <code>asyncio.to_thread</code>.</li>
+        <li>Server-Sent Events streaming with proxy-buffering disabled, ending in an explicit <code>[DONE]</code>.</li>
+        <li>Every query lands in an audit trail; Docker Compose for one-command runs; 160 tests in CI.</li>
+      </ul>
+
+      <h2>Takeaways</h2>
+      <ol>
+        <li>Make “I don’t know” a first-class, deterministic outcome.</li>
+        <li>Budget tokens explicitly; relevance decides what gets in.</li>
+        <li>If an answer cannot be traced to a chunk, it should not ship.</li>
+      </ol>
+
+      <footer class="end">
+        <a class="btn" href="https://github.com/Yasinyan23/rag-agent" target="_blank" rel="noopener">Read the code ↗</a>
+        <a href="/#contact">Get in touch</a>
+      </footer>
+    </main>
+  </body>
+</html>

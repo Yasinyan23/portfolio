@@ -1,5 +1,6 @@
 import { projects } from "./content";
 import { caseHTML } from "./render";
+import { renderMini } from "./mini";
 
 // Card → full-screen case study. The clicked card and its title share view-transition names with
 // the dialog panel and its heading, so the browser morphs one into the other (and back on close).
@@ -8,6 +9,7 @@ export function initCase(reduce: boolean): (i: number) => void {
   const body = dialog.querySelector<HTMLElement>(".case__body")!;
   const cards = Array.from(document.querySelectorAll<HTMLElement>(".card"));
   let current = -1;
+  let stopMini = () => {};
 
   const tag = (i: number, on: boolean) => {
     const card = cards[i];
@@ -31,6 +33,8 @@ export function initCase(reduce: boolean): (i: number) => void {
     current = i;
     body.innerHTML = caseHTML(projects[i], i, projects.length);
     body.scrollTop = 0;
+    stopMini();
+    stopMini = renderMini(body.querySelector<SVGSVGElement>("svg.mini")!, projects[i].diagram, reduce);
   };
 
   const open = (i: number) => {
@@ -51,6 +55,7 @@ export function initCase(reduce: boolean): (i: number) => void {
         tag(i, true);
       },
       () => {
+        stopMini();
         tag(i, false);
         cards[i]?.querySelector<HTMLElement>(".card__open")?.focus({ preventScroll: true });
       },

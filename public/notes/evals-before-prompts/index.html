@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Evals before prompts — Khachatur Pepanyan</title>
+    <meta name="description" content="How a 1,700-case golden set, a CI regression gate and a calibrated LLM-as-judge kept LLM features in credit decisioning honest — and cut AI cost per case by 45%." />
+    <link rel="canonical" href="https://pepaniank.pages.dev/notes/evals-before-prompts/" />
+    <meta property="og:type" content="article" />
+    <meta property="og:title" content="Evals before prompts" />
+    <meta property="og:description" content="A golden set, a CI gate and a calibrated judge: how to change prompts and models fast without silently breaking production." />
+    <meta property="og:url" content="https://pepaniank.pages.dev/notes/evals-before-prompts/" />
+    <meta property="og:image" content="https://pepaniank.pages.dev/og.png?v=2" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#08080c" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="/notes/note.css" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "TechArticle",
+        "headline": "Evals before prompts",
+        "description": "How a 1,700-case golden set, a CI regression gate and a calibrated LLM-as-judge kept LLM features in credit decisioning honest.",
+        "datePublished": "2026-10-04",
+        "author": { "@type": "Person", "name": "Khachatur Pepanyan", "url": "https://pepaniank.pages.dev/" },
+        "mainEntityOfPage": "https://pepaniank.pages.dev/notes/evals-before-prompts/"
+      }
+    </script>
+  </head>
+  <body>
+    <header class="top">
+      <a href="/">Khachatur Pepanyan</a>
+      <a href="/#notes">← All notes</a>
+    </header>
+
+    <main class="note">
+      <p class="kicker">Notes · LLM evaluation · 6 min read</p>
+      <h1>Evals before <span>prompts</span></h1>
+      <p class="lede">
+        On an LLM-powered credit-decisioning platform, every prompt change was effectively a production deploy. This is the
+        evaluation setup that let us change prompts and models quickly — without silently breaking the decision engine behind them.
+      </p>
+
+      <div class="stats">
+        <div><b>1,700</b>labeled golden cases</div>
+        <div><b>96%</b>field-level accuracy</div>
+        <div><b>−45%</b>AI cost per case</div>
+        <div><b>3.8 s</b>p95 latency kept</div>
+      </div>
+
+      <h2>Why a prompt needs a release gate</h2>
+      <p>
+        The LLM features sat on top of credit-decisioning services handling 50–70k requests a day: RAG over credit policies and
+        historical cases, structured extraction from bank statements, payslips and ID documents, and a tool-calling agent that drafted
+        recommendations for manual reviews. Their outputs fed a decision engine, so a wrong field was not a typo — it was a wrong decision.
+      </p>
+      <p>
+        A prompt tweak that fixes one case can quietly degrade fifty others. Without measurement you learn about it from analysts, or
+        worse, from the decisions themselves. So the rule became simple: <strong>no prompt or model change ships unless the evals say it is
+        at least as good as what is running.</strong>
+      </p>
+
+      <h2>The dataset comes first</h2>
+      <p>
+        The foundation is a golden set of <strong>1,700 labeled cases</strong>, topped up with sampled production traces so the set does not
+        drift away from what users actually send. Labels live at the <strong>field level</strong>, not the document level: “income correct,
+        employer wrong” tells you what to fix; “document 80% fine” does not.
+      </p>
+
+      <h2>One metric per way of failing</h2>
+      <ul>
+        <li>
+          <strong>Field-level accuracy</strong> for extraction — 96% on a held-out labeled set, with low-confidence fields routed to a
+          human instead of flowing silently into scoring.
+        </li>
+        <li>
+          <strong>Retrieval recall@k</strong> for RAG. If the right policy clause never reaches the context window, no prompt will save
+          the answer — so retrieval gets measured on its own.
+        </li>
+        <li>
+          <strong>Groundedness</strong> scored by an LLM-as-judge that was <strong>calibrated against analyst ratings</strong>. A judge
+          you have not calibrated is just another unmeasured model.
+        </li>
+      </ul>
+
+      <h2>The gate</h2>
+      <p>
+        Every prompt or model change runs the suite in CI, and a drop below the baseline blocks the merge. Production drift monitoring
+        covers what the golden set does not yet contain. Prompts and models are versioned, and per-call tracing with Langfuse and
+        OpenTelemetry ties any bad answer back to the exact prompt and model that produced it — together with latency, token cost and
+        error-rate dashboards.
+      </p>
+      <p class="callout">
+        The point of the gate is speed, not caution: once regressions are caught automatically, you can try a new prompt or model
+        the same afternoon instead of debating it for a week.
+      </p>
+
+      <h2>Evals pay for themselves: model routing</h2>
+      <p>
+        Benchmarking candidate models on the same suite showed that simpler cases did not need the largest model. Routing them to a
+        smaller one cut <strong>AI cost per case by 45%</strong> while keeping <strong>p95 latency at 3.8 seconds</strong>. That is a change
+        I would never have shipped on intuition — the eval numbers are what made it safe.
+      </p>
+
+      <h2>Humans stay in the loop</h2>
+      <p>
+        Evals tell you how good the model is; the human loop decides what happens when it is not. Low-confidence fields go to review,
+        and the agent only drafts recommendations — an analyst approves every one of them.
+      </p>
+
+      <h2>What I would tell my past self</h2>
+      <ol>
+        <li>Build the eval set before polishing prompts — otherwise you are tuning against vibes.</li>
+        <li>Measure at the level you act on: fields, retrieved chunks, single claims.</li>
+        <li>Calibrate the judge against humans, and re-check it when the domain shifts.</li>
+        <li>Make the gate block merges. A dashboard nobody has to pass is a suggestion.</li>
+        <li>Let eval data pick models and routes — that is where the cost savings hide.</li>
+      </ol>
+
+      <footer class="end">
+        <a class="btn" href="/#contact">Get in touch</a>
+        <span>Stack: Python · Pydantic · OpenAI &amp; Anthropic models · pgvector · Langfuse · OpenTelemetry</span>
+      </footer>
+    </main>
+  </body>
+</html>

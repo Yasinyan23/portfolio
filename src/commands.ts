@@ -1,4 +1,4 @@
-import { jobs, profile, projects, stack } from "./content";
+import { jobs, notes, profile, projects, stack } from "./content";
 
 type Hooks = { openCase: (i: number) => void; toggleTheme: () => void };
 type Action = { label: string; hint: string; run: () => void };
@@ -28,7 +28,7 @@ export function initCommands({ openCase, toggleTheme }: Hooks, reduce: boolean):
 
   const COMMANDS: Record<string, (args: string[]) => string | void> = {
     help: () =>
-      "commands: whoami · projects · open <n> · experience · stack · contact · cv · leetcode · theme · ls · cat about.txt · clear · sudo hire-me",
+      "commands: whoami · projects · open <n> · notes · experience · stack · contact · cv · leetcode · theme · ls · cat about.txt · clear · sudo hire-me",
     whoami: () => `${profile.name} — ${profile.role}\n${profile.intro}`,
     projects: () => projects.map((p, i) => `${i + 1}. ${p.title}`).join("\n") + "\n→ open <n> for the full case study",
     open: ([n]) => {
@@ -37,6 +37,7 @@ export function initCommands({ openCase, toggleTheme }: Hooks, reduce: boolean):
       openCase(i);
       return `opening "${projects[i].title}"…`;
     },
+    notes: () => notes.map((n, i) => `${i + 1}. ${n.title}\n   ${location.origin}/notes/${n.slug}/`).join("\n"),
     experience: () => jobs.map((j) => `${j.period.padEnd(20)} ${j.company}`).join("\n"),
     stack: () => stack.join(" · "),
     contact: () =>
@@ -50,7 +51,7 @@ export function initCommands({ openCase, toggleTheme }: Hooks, reduce: boolean):
       toggleTheme();
       return "theme switched";
     },
-    ls: () => "projects/  experience/  about.txt  cv.pdf",
+    ls: () => "projects/  experience/  notes/  about.txt  cv.pdf",
     cat: ([file]) => (file === "about.txt" ? profile.about.join("\n\n") : `cat: ${file ?? ""}: no such file`),
     clear: () => {
       out.replaceChildren();
@@ -122,12 +123,13 @@ export function initCommands({ openCase, toggleTheme }: Hooks, reduce: boolean):
   }).observe(out);
 
   initPalette([
-    ...["projects", "experience", "about", "contact"].map((id) => ({
+    ...["projects", "experience", "about", "notes", "contact"].map((id) => ({
       label: `Go to ${id[0].toUpperCase()}${id.slice(1)}`,
       hint: "section",
       run: () => go(id),
     })),
     ...projects.map((p, i) => ({ label: p.title, hint: "case study", run: () => openCase(i) })),
+    ...notes.map((n) => ({ label: n.title, hint: "note", run: () => location.assign(`/notes/${n.slug}/`) })),
     { label: "Open terminal", hint: "interactive", run: () => (go("terminal"), input.focus({ preventScroll: true })) },
     { label: "Download CV", hint: "pdf", run: () => download(profile.cv) },
     { label: "Copy email", hint: profile.email, run: () => void navigator.clipboard?.writeText(profile.email) },

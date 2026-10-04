@@ -139,7 +139,7 @@ h2 {
   border-radius: 999px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 720px) {
   .nav nav a:not(.nav__cv):not([href="#contact"]) {
     display: none;
   }
@@ -720,7 +720,8 @@ section {
 
 /* dark panels keep their own palette in both themes */
 .term,
-.flow {
+.flow,
+.case__diagram {
   --fg: #f1f1f6;
   --muted: #aeaec1;
   --accent-2: #2de2c0;
@@ -2096,4 +2097,139 @@ body::before {
   .pod.is-starting {
     animation: none;
   }
+}
+
+/* ---------- case-study architecture diagrams ---------- */
+
+.case__diagram {
+  margin: 0 0 36px;
+  padding: 14px 14px 10px;
+  background: rgba(12, 12, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 18px;
+}
+
+.case__diagram figcaption {
+  margin-top: 6px;
+  font: 500 0.7rem var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.mini {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+@media (max-width: 600px) {
+  .case__diagram {
+    margin-inline: -12px;
+    padding: 10px 4px 8px;
+  }
+
+  .case__diagram figcaption {
+    padding-left: 10px;
+  }
+}
+
+.mnode {
+  animation: node-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+  animation-delay: calc(var(--i, 0) * 40ms);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.mnode rect {
+  fill: rgba(255, 255, 255, 0.05);
+  stroke: rgba(255, 255, 255, 0.14);
+  stroke-width: 1.1;
+}
+
+.mnode text {
+  font: 500 10.5px Inter, system-ui, sans-serif;
+  fill: #e6e6ef;
+  text-anchor: middle;
+}
+
+.mini .edge--fix {
+  stroke: rgba(255, 181, 71, 0.4);
+  stroke-dasharray: 4 4;
+}
+
+.mini .edge--bad {
+  stroke: rgba(255, 95, 87, 0.4);
+  stroke-dasharray: 4 4;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mnode {
+    animation: none;
+  }
+}
+
+/* ---------- hero diagram tooltips ---------- */
+
+.flow .node {
+  cursor: help;
+}
+
+.flow__tip {
+  position: absolute;
+  z-index: 3;
+  max-width: 230px;
+  padding: 7px 10px;
+  font: 500 0.75rem/1.35 Inter, system-ui, sans-serif;
+  color: #f1f1f6;
+  text-align: center;
+  background: rgba(20, 20, 30, 0.96);
+  border: 1px solid rgba(124, 92, 255, 0.5);
+  border-radius: 10px;
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+  transform: translate(-50%, calc(-100% - 8px));
+  pointer-events: none;
+}
+
+/* ---------- notes ---------- */
+
+.notes {
+  display: grid;
+  gap: 16px;
+}
+
+@media (min-width: 760px) {
+  .notes {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.note-card {
+  display: grid;
+  align-content: start;
+  gap: 10px;
+}
+
+.note-card:hover {
+  text-decoration: none;
+}
+
+.note-card h3 {
+  font: 600 1.4rem / 1.25 var(--display);
+  color: var(--fg);
+}
+
+.note-card__more {
+  margin-top: 6px;
+  font-weight: 600;
+  color: var(--fg);
+}
+
+.note-card__more span {
+  display: inline-block;
+  transition: transform 0.3s;
+}
+
+.note-card:hover .note-card__more span {
+  transform: translateX(4px);
 }

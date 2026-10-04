@@ -1,4 +1,4 @@
-import { jobs, profile, projects, stack, stats } from "./content";
+import { jobs, notes, profile, projects, stack, stats } from "./content";
 import type { Job, Project } from "./content";
 
 const ENTITIES: Record<string, string> = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" };
@@ -24,6 +24,10 @@ export const caseHTML = (p: Project, i: number, total: number) => `
   <h2 class="case__title" id="case-title">${esc(p.title)}</h2>
   <p class="case__summary">${esc(p.summary)}</p>
   <ul class="metrics metrics--big">${metricsHTML(p)}</ul>
+  <figure class="case__diagram">
+    <svg class="mini" role="img" aria-label="Architecture diagram of ${esc(p.title)}"></svg>
+    <figcaption>How it works</figcaption>
+  </figure>
   <div class="case__cols">
     <div class="case__story">${p.details.map((d) => `<p>${esc(d)}</p>`).join("")}</div>
     <div>${sideHTML(p)}</div>
@@ -54,6 +58,7 @@ export function render(root: HTMLElement): void {
       <a href="#projects">Projects</a>
       <a href="#experience">Experience</a>
       <a href="#about">About</a>
+      <a href="#notes">Notes</a>
       <a href="#contact">Contact</a>
       <button class="nav__k" type="button" aria-label="Open command palette" data-magnetic><kbd>⌘K</kbd></button>
       <button class="nav__theme" type="button" data-magnetic></button>
@@ -83,6 +88,7 @@ export function render(root: HTMLElement): void {
           <span>↺ <b class="flow-retry">0</b> · ✗ <b class="flow-bugs">0</b> · <b class="flow-cost">$0.00</b></span>
         </div>
         <svg class="flow__svg" viewBox="0 0 480 590" aria-hidden="true"></svg>
+        <div class="flow__tip" role="tooltip" hidden></div>
         <div class="flow__ladder">
           <div class="flow__levels" role="group" aria-label="Show the agent process at a seniority level">
             <button type="button" aria-pressed="true">Junior</button>
@@ -216,6 +222,23 @@ export function render(root: HTMLElement): void {
               .join("")}
           </ol>
         </div>
+      </div>
+    </section>
+
+    <section id="notes">
+      <h2 class="stream">Notes</h2>
+      <div class="notes">
+        ${notes
+          .map(
+            (n) => `
+        <a class="tile note-card reveal" href="/notes/${n.slug}/">
+          <p class="tile__label">${esc(n.tag)} · ${n.minutes} min read</p>
+          <h3>${esc(n.title)}</h3>
+          <p>${esc(n.summary)}</p>
+          <span class="note-card__more">Read <span aria-hidden="true">→</span></span>
+        </a>`,
+          )
+          .join("")}
       </div>
     </section>
 

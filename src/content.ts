@@ -1,3 +1,5 @@
+import type { Icon } from "./svg";
+
 // All site content (profile, stats, stack, projects, experience) lives here. Section labels and button text live in render.ts.
 
 export type Link = { label: string; href: string };
@@ -13,11 +15,18 @@ export type Job = {
   chips: string[];
   stack: string[];
 };
+// case-study architecture: nodes on a 5-column grid, links carry a looping glyph
+export type Diagram = {
+  nodes: [id: string, label: string, col: number, row: number][];
+  edges: [from: string, to: string, icon?: Icon, mode?: "both" | "fix" | "bad" | "L" | "ops"][];
+};
+
 export type Project = {
   title: string;
   org: string;
   summary: string;
   details: string[];
+  diagram: Diagram;
   highlights: string[];
   metrics: Metric[];
   stack: string[];
@@ -114,6 +123,10 @@ export const projects: Project[] = [
       "The platform turns ordinary match footage into biomechanics insights. Each play passes through player detection and tracking, per-frame 3D human body reconstruction with PyTorch and a parametric body model, gait-cycle segmentation aligned to toe-off, and 34 metrics per cycle across 5 gait phases and both legs.",
       "Models were evaluated, selected and fine-tuned for production, balancing accuracy against latency and CPU/memory limits, with weights and checkpoints versioned across releases. Pre- and post-processing — frame extraction, player cropping, keypoint filtering, temporal smoothing, toe-off detection — directly lifts metric quality, and research prototypes from biomechanics scientists move into backend services while the domain formulas stay owned by the experts.",
     ],
+    diagram: {
+      nodes: [["video", "Match video", 0, 0], ["track", "Detect + track", 1, 0], ["recon", "3D body model", 2, 0], ["gait", "Gait cycles", 3, 0], ["metrics", "34 metrics/cycle", 4, 0], ["pg", "Postgres · 20M+", 4, 1], ["api", "Product API", 3, 1], ["sci", "Domain formulas", 2, 1]],
+      edges: [["video", "track", "file"], ["track", "recon", "file"], ["recon", "gait", "box"], ["gait", "metrics", "chart"], ["sci", "metrics", "file", "L"], ["metrics", "pg", "chart"], ["pg", "api", "chart"]],
+    },
     highlights: [
       "Evaluated, selected and fine-tuned computer-vision models for production inference.",
       "Built preprocessing and postprocessing workflows for frames, player crops, keypoints, temporal smoothing and gait-phase detection.",
@@ -137,6 +150,10 @@ export const projects: Project[] = [
       "Analysts reviewing applications by hand had to pull applicant profiles, bureau reports, score explanations and policy text from different systems. The agent does that legwork through internal APIs exposed as an MCP server — 20 services in total — and drafts a recommendation backed by the relevant policy.",
       "Guardrails, PII redaction and mandatory human approval keep the analyst in control: the agent proposes, a person decides. Drafting a recommendation went from about 2.5 minutes to about 20 seconds, and manual-review handling time fell by 52%.",
     ],
+    diagram: {
+      nodes: [["analyst", "Risk analyst", 0, 1], ["agent", "Agent", 1, 1], ["mcp", "MCP server", 2, 1], ["prof", "Profiles", 3, 0], ["bureau", "Bureau reports", 3, 1], ["score", "Score reasons", 3, 2], ["policy", "Policies · RAG", 2, 0], ["guard", "Guardrails · PII", 1, 2], ["human", "Human approval", 0, 2]],
+      edges: [["analyst", "agent", "file"], ["agent", "mcp", "file", "both"], ["mcp", "prof", "file", "both"], ["mcp", "bureau", "file", "both"], ["mcp", "score", "file", "both"], ["agent", "policy", "file", "both"], ["agent", "guard", "code"], ["guard", "human", "check"]],
+    },
     highlights: [
       "Implemented tool calling, policy retrieval, recommendation drafting, guardrails and PII redaction.",
       "Added mandatory human approval to keep credit decisions under human control.",
@@ -159,6 +176,10 @@ export const projects: Project[] = [
       "Long-lived PyTorch workers load model weights once and reuse them across tasks, keeping memory around 2.4 GiB per worker so 30 workers fit on a single 80-vCPU GCP host. Work flows through Celery and RabbitMQ with late acknowledgements, retries and backoff.",
       "Per-play processing status, bounded connection pools between inference services and recovery tooling made it possible to reprocess the entire historical catalog — about 68k plays — in roughly 3 days while sustaining 20k+ plays per day. Builds ship through Docker Compose, GitLab CI and Google Artifact Registry.",
     ],
+    diagram: {
+      nodes: [["videos", "Match videos", 0, 1], ["queue", "RabbitMQ", 1, 1], ["w1", "Worker 1", 2, 0], ["w2", "Worker 2", 2, 1], ["w30", "Worker 30", 2, 2], ["pg", "PostgreSQL", 3, 1], ["out", "Athlete insights", 4, 1]],
+      edges: [["videos", "queue", "file"], ["queue", "w1", "file"], ["queue", "w2", "file"], ["queue", "w30", "file"], ["w30", "queue", "fix", "fix"], ["w1", "pg", "chart"], ["w2", "pg", "chart"], ["w30", "pg", "chart"], ["pg", "out", "chart"]],
+    },
     highlights: [
       "Scaled processing to 30 inference workers on an 80-vCPU GCP instance.",
       "Implemented retries, backoff, processing status, recovery and reprocessing mechanisms.",
@@ -181,6 +202,10 @@ export const projects: Project[] = [
       "Underwriting depends on fields buried in bank statements, payslips and ID documents. Extraction returns schema-validated fields for the scoring engine, and low-confidence fields go to human review instead of silently flowing downstream — 96% field-level accuracy on a held-out labeled set.",
       "Quality is guarded by an evaluation framework: a 1,700-case golden set plus sampled production traces, measuring field-level accuracy, retrieval recall@k and LLM-as-judge groundedness calibrated against analyst ratings. A CI gate blocks prompt or model changes that lower quality, and eval results drove routing simple cases to a smaller model — 45% lower AI cost per case at 3.8 s p95.",
     ],
+    diagram: {
+      nodes: [["docs", "Documents", 0, 0], ["extract", "LLM extractor", 1, 0], ["schema", "Schema check", 2, 0], ["scoring", "Scoring engine", 3, 0], ["human", "Human review", 2, 1], ["traces", "Prod traces", 0, 1], ["router", "Model router", 1, 1], ["golden", "Golden set 1,700", 0, 2], ["evals", "Eval suite", 1, 2], ["gate", "CI gate", 2, 2], ["ship", "Ship ✓", 3, 2]],
+      edges: [["docs", "extract", "file"], ["extract", "schema", "code"], ["schema", "scoring", "check"], ["schema", "human", "file", "fix"], ["human", "scoring", "check"], ["golden", "evals", "file"], ["traces", "evals", "file"], ["evals", "gate", "chart"], ["gate", "ship", "check"], ["evals", "router", "chart"], ["router", "extract", "bolt", "L"]],
+    },
     highlights: [
       "Extracted structured fields from bank statements, payslips and identity documents; routed low-confidence fields to human review.",
       "Built an evaluation framework around 1,700 labeled cases and sampled production traces.",
@@ -205,6 +230,10 @@ export const projects: Project[] = [
       "Under full production load the inference fleet stalled: load average hit ~837 on 80 cores. The cause was PyTorch thread oversubscription — every worker spinning up full-width OMP/MKL and intra-op pools. Tuning thread pools per worker and moving to SSD persistent disks gave a 30–40% throughput gain.",
       "Correctness got the same attention as speed: a value-for-value comparison of the new per-cycle metrics path against the legacy implementation on production data matched 100%, completeness logging exposes undetected gait phases, and annotators review model output in a human-in-the-loop workflow. Up to 340 values per gait cycle land in PostgreSQL — 20M+ samples for baselines, cohort comparisons and left/right asymmetry.",
     ],
+    diagram: {
+      nodes: [["workers", "30 × 80 threads", 0, 0], ["load", "Load avg 837", 1, 0], ["pools", "Thread pools", 2, 0], ["ssd", "SSD disks", 3, 0], ["fast", "+30–40% speed", 4, 0], ["new", "New metrics path", 0, 1], ["cmp", "vs legacy path", 1, 1], ["legacy", "Legacy output", 1, 2], ["match", "100% match ✓", 2, 1], ["pg", "Postgres · 20M+", 3, 1], ["cohort", "Cohorts · L/R", 4, 1]],
+      edges: [["workers", "load", "bug", "bad"], ["load", "pools", "fix", "fix"], ["pools", "ssd", "box"], ["ssd", "fast", "chart"], ["new", "cmp", "chart"], ["legacy", "cmp", "chart"], ["cmp", "match", "check"], ["match", "pg", "chart"], ["pg", "cohort", "chart"]],
+    },
     highlights: [
       "Diagnosed PyTorch thread oversubscription under production load and tuned OMP/MKL and PyTorch thread pools.",
       "Optimized worker I/O with SSD persistent disks.",
@@ -228,6 +257,10 @@ export const projects: Project[] = [
       "High-volume credit decisioning ran on Python/FastAPI microservices with RabbitMQ, sustaining 50–70k requests per day. Automating scoring and decision steps cut overall decision time by about 80% and manual reviews by more than 60%, while throughput grew by about 45% without SLA degradation.",
       "On top of the platform came LLM-powered underwriting: RAG over credit policies and historical cases with pgvector, hybrid keyword + embedding search and re-ranking, with structured JSON outputs validated against Pydantic schemas before reaching the decision engine. I led a team of 5–7 engineers through it, including migrating legacy data and services without interrupting the business.",
     ],
+    diagram: {
+      nodes: [["apps", "Applications", 0, 1], ["api", "FastAPI services", 1, 1], ["mq", "RabbitMQ", 2, 1], ["scoring", "Scoring", 3, 1], ["decision", "Decision engine", 4, 1], ["kb", "Policies + cases", 1, 0], ["rag", "RAG · pgvector", 2, 0], ["llm", "LLM underwriting", 3, 0], ["json", "Pydantic JSON", 4, 0], ["fast", "−80% time", 4, 2]],
+      edges: [["apps", "api", "file"], ["api", "mq", "file"], ["mq", "scoring", "file"], ["scoring", "decision", "chart"], ["kb", "rag", "folder"], ["rag", "llm", "folder"], ["llm", "json", "code", "L"], ["json", "decision", "check"], ["decision", "fast", "chart"]],
+    },
     highlights: [
       "Built LLM features on OpenAI and Anthropic models: RAG over credit policies and historical cases, pgvector, hybrid search and re-ranking.",
       "Integrated structured JSON outputs validated with Pydantic schemas into decision workflows.",
@@ -250,6 +283,10 @@ export const projects: Project[] = [
       "Naive RAG fails in production in three ways: hallucinated answers, unbounded token costs and answers nobody can audit. DocuQuery handles all three by design — a similarity threshold with a fast-path refusal (the LLM is never called when nothing relevant is found), a token-budget manager that packs the best chunks under a hard ceiling, and mandatory source citations.",
       "It ingests PDF, DOCX, XLSX, CSV, HTML and Markdown with section-aware citations, streams answers over SSE, keeps all I/O async and logs every query to an audit trail. Clean architecture keeps storage and LLM providers swappable, and 160 tests run in CI.",
     ],
+    diagram: {
+      nodes: [["files", "PDF, DOCX, XLSX", 0, 0], ["chunk", "Token chunker", 1, 0], ["embed", "Embeddings", 2, 0], ["chroma", "ChromaDB", 3, 0], ["q", "Question", 0, 1], ["retrieve", "Retrieve top-k", 1, 1], ["thresh", "Score threshold", 2, 1], ["budget", "Token budget", 3, 1], ["answer", "Cited answer", 4, 1], ["refuse", "Refuse · no LLM", 2, 2], ["audit", "Audit log", 4, 2]],
+      edges: [["files", "chunk", "file"], ["chunk", "embed", "file"], ["embed", "chroma", "box"], ["q", "retrieve", "file"], ["chroma", "retrieve", "folder"], ["retrieve", "thresh", "folder"], ["thresh", "budget", "folder"], ["budget", "answer", "code"], ["thresh", "refuse", "file", "bad"], ["answer", "audit", "chart"]],
+    },
     highlights: [
       "Multi-format ingestion (PDF, DOCX, XLSX, CSV, HTML, Markdown) with token sliding-window chunking.",
       "Score-thresholded ChromaDB retrieval and a fast-path refusal that never calls the LLM when nothing relevant is found.",
@@ -273,6 +310,10 @@ export const projects: Project[] = [
       "Apps send a user ID and a message; the service returns a verdict from the customer's own connected provider — Claude, GPT-4o or Gemini — behind one interface. Provider keys are encrypted with Fernet and decrypted only inside the request, and access tokens are hashed into a server-side session table so logout truly revokes them.",
       "A strike pipeline tracks repeat offenders per app and user: after five strikes the user is permanently flagged and blocked before any AI call, so they cost zero tokens. Separate tables keep strike counters fast to query and the full violation log auditable.",
     ],
+    diagram: {
+      nodes: [["app", "Client app", 0, 1], ["api", "POST /moderate", 1, 1], ["strike", "Strike check", 2, 1], ["keys", "Fernet keys", 2, 0], ["router", "Provider router", 3, 1], ["claude", "Claude", 4, 0], ["openai", "OpenAI", 4, 1], ["gemini", "Gemini", 4, 2], ["flagged", "Flagged user", 2, 2], ["verdict", "Verdict + strike", 3, 2]],
+      edges: [["app", "api", "file"], ["api", "strike", "file"], ["strike", "router", "file"], ["keys", "router", "box", "ops"], ["router", "claude", "file", "both"], ["router", "openai", "file", "both"], ["router", "gemini", "file", "both"], ["strike", "flagged", "bug", "bad"], ["router", "verdict", "check"]],
+    },
     highlights: [
       "One provider interface with Claude, OpenAI and Gemini implementations resolved per request.",
       "Provider API keys encrypted with Fernet and decrypted only inside the request cycle.",
@@ -332,5 +373,27 @@ export const jobs: Job[] = [
     stack: ["Python", "Microservices", "Geospatial", "CI/CD"],
     summary:
       "Distributed backends for transport analytics and forecasting: calculation runtime −20%, manual reporting −40%, migration from legacy components to microservices.",
+  },
+];
+
+export type Note = { slug: string; title: string; summary: string; tag: string; minutes: number };
+
+// long-form pages live in public/notes/<slug>/index.html
+export const notes: Note[] = [
+  {
+    slug: "evals-before-prompts",
+    title: "Evals before prompts",
+    summary:
+      "A 1,700-case golden set, a judge calibrated against analysts and a CI gate: how to change prompts and models fast without silently breaking production.",
+    tag: "LLM evaluation",
+    minutes: 6,
+  },
+  {
+    slug: "grounded-rag",
+    title: "Refuse before you hallucinate",
+    summary:
+      "Design notes on DocuQuery: a score threshold with a refusal that never calls the LLM, a hard token budget and citations on every claim.",
+    tag: "RAG · open source",
+    minutes: 5,
   },
 ];
