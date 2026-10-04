@@ -46,4 +46,4 @@ npm run build    # type-check and build into dist/
 
 ## Deploy
 
-Every push to `main` builds the site and deploys `dist/` to Cloudflare Pages through GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). The workflow expects a `CLOUDFLARE_API_TOKEN` repository secret with the *Cloudflare Pages — Edit* permission.
+Every push to `main` builds the site and deploys `dist/` to Cloudflare Pages through GitHub Actions ([`deploy.yml`](.github/workflows/deploy.yml)). The workflow expects a repository secret `MAIN` holding a Cloudflare API token with the *Cloudflare Pages — Edit* permission.
