@@ -9,6 +9,7 @@ const COL = 128;
 const ROW = 62;
 const W = 112;
 const NH = 36;
+const SPEED = 3; // laps and spin, relative to the first version
 
 type Box = { x: number; y: number; col: number; row: number };
 
@@ -64,7 +65,7 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
     const el = glyph(icon, 12, `ico${tone ? ` ico--${tone}` : ""}`);
     el.style.opacity = "0";
     gFx.append(el);
-    laps.push({ el, p, len, dur: Math.min(2200, Math.max(900, len * 7)), phase: Math.random() * 2000, both: mode === "both", icon, turn: icon === "fix" });
+    laps.push({ el, p, len, dur: Math.min(2200, Math.max(900, len * 7)) / SPEED, phase: Math.random() * 2000, both: mode === "both", icon, turn: icon === "fix" });
   });
   if (reduce) return () => {};
 
@@ -90,7 +91,7 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
       l.el.setAttribute("x", String(pt.x - 6));
       l.el.setAttribute("y", String(pt.y - 6));
       l.el.style.opacity = String(Math.min(1, k * 6, (1 - k) * 6));
-      if (l.turn) l.el.setAttribute("transform", `rotate(${((t * 0.5) % 360).toFixed(1)} ${pt.x} ${pt.y})`);
+      if (l.turn) l.el.setAttribute("transform", `rotate(${((t * 0.5 * SPEED) % 360).toFixed(1)} ${pt.x} ${pt.y})`);
     }
     raf = requestAnimationFrame(frame);
   };
@@ -100,7 +101,7 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
       if (!visible) return;
       if (!timer) {
         svg.parentElement!.classList.add("is-in"); // un-pauses the CSS entrance
-        timer = window.setTimeout(() => ((ready = true), run()), 1300);
+        timer = window.setTimeout(() => ((ready = true), run()), 600);
       }
       run();
     },
