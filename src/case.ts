@@ -12,6 +12,9 @@ export function initCase(reduce: boolean): (i: number) => void {
   let current = -1;
   let stopMini = () => {};
 
+  // every card shows its architecture diagram inline, so the page reads without opening anything
+  cards.forEach((card, i) => renderMini(card.querySelector<SVGSVGElement>("svg.mini")!, projects[i].diagram, reduce));
+
   const tag = (i: number, on: boolean) => {
     const card = cards[i];
     if (!card) return;

@@ -18,16 +18,19 @@ const sideHTML = (p: Project) => `
   <ul class="tags">${p.stack.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
   ${p.links.length ? `<p class="card__links">${p.links.map((l) => ext(l.href, l.label, "↗")).join("")}</p>` : ""}`;
 
+const diagramHTML = (p: Project, cls = "") => `
+  <figure class="case__diagram${cls}">
+    <svg class="mini" role="img" aria-label="Architecture diagram of ${esc(p.title)}"></svg>
+    <figcaption>How it works</figcaption>
+  </figure>`;
+
 // full-screen case study (dialog body); prev/next buttons carry data-case
 export const caseHTML = (p: Project, i: number, total: number) => `
   <p class="card__org">${esc(p.org)}</p>
   <h2 class="case__title" id="case-title">${esc(p.title)}</h2>
   <p class="case__summary">${esc(p.summary)}</p>
   <ul class="metrics metrics--big">${metricsHTML(p)}</ul>
-  <figure class="case__diagram">
-    <svg class="mini" role="img" aria-label="Architecture diagram of ${esc(p.title)}"></svg>
-    <figcaption>How it works</figcaption>
-  </figure>
+  ${diagramHTML(p)}
   <div class="case__cols">
     <div class="case__story">${p.details.map((d) => `<p>${esc(d)}</p>`).join("")}</div>
     <div>${sideHTML(p)}</div>
@@ -148,6 +151,7 @@ export function render(root: HTMLElement): void {
             ${sideHTML(p)}
             <button class="card__open" type="button">Case study <span aria-hidden="true">→</span></button>
           </div>
+          ${diagramHTML(p, " card__diagram")}
         </article>`,
         )
         .join("")}

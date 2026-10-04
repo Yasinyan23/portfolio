@@ -403,10 +403,12 @@ section {
 
 .card {
   position: relative;
+  isolation: isolate;
   display: grid;
   gap: 28px;
   padding: clamp(22px, 4vw, 40px);
-  margin-bottom: 20px;
+  /* wider than the text column on big screens */
+  margin: 0 calc((100% - min(1280px, 100vw - 40px)) / 2) 20px;
   border-radius: 24px;
   background: var(--glass);
   border: 1px solid var(--line);
@@ -448,8 +450,9 @@ section {
 
 .card__num {
   position: absolute;
+  z-index: -1;
+  top: -16px;
   right: 24px;
-  bottom: -14px;
   font: 700 7rem/1 var(--display);
   color: transparent;
   -webkit-text-stroke: 1px rgba(255, 255, 255, 0.08);
@@ -2276,7 +2279,25 @@ body::before {
 
 /* glow + one lap of light around the edge as the panel lands, then the contents arrive in order;
    prev/next re-renders the body, so the content part replays on every switch */
+.card > .card__diagram {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* one column: the diagram goes right under the numbers, before the bullet list */
+@media (max-width: 859px) {
+  .card__body {
+    order: 1;
+  }
+}
+
 @media (prefers-reduced-motion: no-preference) {
+  /* a diagram's entrance waits until it scrolls into view (mini.ts adds .is-in) */
+  .case__diagram:not(.is-in) .mnode,
+  .case__diagram:not(.is-in) .edge {
+    animation-play-state: paused;
+  }
+
   .case[open] {
     animation: case-glow 1.4s ease-out;
   }

@@ -1,8 +1,9 @@
 import { glyph, svgEl } from "./svg";
 import type { Diagram } from "./content";
 
-// Small looping architecture diagram for a case study: nodes on a 5-column grid, one glyph per
-// link running laps. Returns a stop() — the loop only runs while the case study is open.
+// Small looping architecture diagram (project cards and case studies): nodes on a 5-column grid, one
+// glyph per link running laps. The entrance and the loop start when it scrolls into view, and the loop
+// pauses whenever it is off screen or the tab is hidden. Returns a stop().
 
 const COL = 128;
 const ROW = 62;
@@ -69,7 +70,14 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
 
   let raf = 0;
   let t0 = 0;
+  let ready = false; // laps wait until the entrance has drawn the links
+  let visible = false;
+  let timer = 0;
+  const run = () => {
+    if (ready && visible && !document.hidden && !raf) raf = requestAnimationFrame(frame);
+  };
   const frame = (now: number) => {
+    if (!visible || document.hidden) return void (raf = 0);
     if (!t0) t0 = now;
     const t = now - t0;
     for (const l of laps) {
@@ -86,9 +94,23 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
     }
     raf = requestAnimationFrame(frame);
   };
-  // laps start once the entrance has drawn the links
-  const timer = setTimeout(() => (raf = requestAnimationFrame(frame)), 1300);
+  const io = new IntersectionObserver(
+    ([e]) => {
+      visible = e.isIntersecting;
+      if (!visible) return;
+      if (!timer) {
+        svg.parentElement!.classList.add("is-in"); // un-pauses the CSS entrance
+        timer = window.setTimeout(() => ((ready = true), run()), 1300);
+      }
+      run();
+    },
+    { threshold: 0.2 },
+  );
+  io.observe(svg);
+  document.addEventListener("visibilitychange", run);
   return () => {
+    io.disconnect();
+    document.removeEventListener("visibilitychange", run);
     clearTimeout(timer);
     cancelAnimationFrame(raf);
   };
