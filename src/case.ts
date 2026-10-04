@@ -1,6 +1,7 @@
 import { projects } from "./content";
 import { caseHTML } from "./render";
 import { renderMini } from "./mini";
+import { scramble } from "./motion";
 
 // Card → full-screen case study. The clicked card and its title share view-transition names with
 // the dialog panel and its heading, so the browser morphs one into the other (and back on close).
@@ -33,6 +34,8 @@ export function initCase(reduce: boolean): (i: number) => void {
     current = i;
     body.innerHTML = caseHTML(projects[i], i, projects.length);
     body.scrollTop = 0;
+    // metric values decode as their tiles pop in (timing matches .metrics--big li in style.css)
+    if (!reduce) body.querySelectorAll<HTMLElement>(".metrics--big .metric__value").forEach((el, k) => scramble(el, 0.6, 0.26 + k * 0.08));
     stopMini();
     stopMini = renderMini(body.querySelector<SVGSVGElement>("svg.mini")!, projects[i].diagram, reduce);
   };

@@ -34,13 +34,14 @@ function streamTokens(h: HTMLElement): void {
 }
 
 // characters resolve left to right out of random glyphs
-function scramble(el: HTMLElement, duration = 0.8): void {
+export function scramble(el: HTMLElement, duration = 0.8, delay = 0): void {
   const text = el.textContent ?? "";
   el.setAttribute("aria-label", text);
   const state = { p: 0 };
   gsap.to(state, {
     p: 1,
     duration,
+    delay,
     ease: "power1.inOut",
     onUpdate: () => {
       const done = Math.floor(state.p * text.length);

@@ -1106,7 +1106,7 @@ h2.streaming::after {
 }
 
 .case::backdrop {
-  background: rgba(4, 4, 8, 0.6);
+  background: radial-gradient(70% 60% at 50% 45%, rgba(124, 92, 255, 0.16), transparent 70%), rgba(4, 4, 8, 0.6);
   backdrop-filter: blur(6px);
 }
 
@@ -1118,6 +1118,10 @@ html:has(dialog[open]) {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   padding: clamp(24px, 5vw, 56px);
+}
+
+.case__body > .card__org {
+  padding-right: 44px; /* clear of the close button */
 }
 
 .case__title {
@@ -1192,10 +1196,38 @@ html:has(dialog[open]) {
   cursor: pointer;
 }
 
+/* the card zooms into the panel with a slight spring; its own image fades out fast so the two never smear */
 ::view-transition-group(case-card),
 ::view-transition-group(case-title) {
-  animation-duration: 0.55s;
-  animation-timing-function: cubic-bezier(0.2, 0.9, 0.2, 1);
+  animation-duration: 0.6s;
+  animation-timing-function: cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+::view-transition-old(case-card),
+::view-transition-old(case-title) {
+  animation: case-fade-out 0.18s ease-out both;
+}
+
+::view-transition-new(case-card),
+::view-transition-new(case-title) {
+  animation: case-fade-in 0.3s ease-out 0.05s both;
+}
+
+/* card and panel titles wrap differently; drop the old one almost at once so they don't ghost */
+::view-transition-old(case-title) {
+  animation-duration: 0.08s;
+}
+
+@keyframes case-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes case-fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* ---------- command palette ---------- */
@@ -2232,4 +2264,139 @@ body::before {
 
 .note-card:hover .note-card__more span {
   transform: translateX(4px);
+}
+
+/* ---------- case study: entrance ---------- */
+
+@property --sweep {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+/* glow + one lap of light around the edge as the panel lands, then the contents arrive in order;
+   prev/next re-renders the body, so the content part replays on every switch */
+@media (prefers-reduced-motion: no-preference) {
+  .case[open] {
+    animation: case-glow 1.4s ease-out;
+  }
+
+  .case[open]::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    padding: 2px;
+    border-radius: inherit;
+    background: conic-gradient(from var(--sweep), transparent 0 60%, var(--accent-2) 80%, var(--accent) 92%, transparent);
+    mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+    pointer-events: none;
+    opacity: 0;
+    animation: case-sweep 1.3s cubic-bezier(0.3, 0.6, 0.3, 1) 0.1s;
+  }
+
+  .case[open] .case__close {
+    animation: case-close-in 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.3s both;
+  }
+
+  .case__body > :not(.case__title, .metrics--big),
+  .metrics--big li {
+    animation: case-rise 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+  }
+
+  .case__body > .card__org {
+    animation-delay: 0.1s;
+  }
+
+  .case__summary {
+    animation-delay: 0.18s;
+  }
+
+  .metrics--big li {
+    animation-name: case-pop;
+    animation-delay: 0.26s;
+  }
+
+  .metrics--big li:nth-child(2) {
+    animation-delay: 0.34s;
+  }
+
+  .metrics--big li:nth-child(3) {
+    animation-delay: 0.42s;
+  }
+
+  .case__diagram {
+    animation-delay: 0.38s;
+  }
+
+  .case__diagram .mnode {
+    animation-delay: calc(0.45s + var(--i) * 45ms);
+  }
+
+  /* links draw themselves after the nodes pop (dashed fix/bad links just fade with the figure) */
+  .case__diagram .edge:not(.edge--fix, .edge--bad) {
+    stroke-dasharray: var(--len);
+    animation: edge-draw 0.6s cubic-bezier(0.4, 0, 0.2, 1) calc(0.55s + var(--k) * 40ms) both;
+  }
+
+  .case__cols {
+    animation-delay: 0.46s;
+  }
+
+  .case__nav {
+    animation-delay: 0.54s;
+  }
+}
+
+@keyframes case-glow {
+  from {
+    box-shadow:
+      0 0 0 1px rgba(124, 92, 255, 0.7),
+      0 0 160px 30px rgba(124, 92, 255, 0.4);
+  }
+}
+
+@keyframes case-sweep {
+  0% {
+    --sweep: 0deg;
+    opacity: 0;
+  }
+
+  15%,
+  75% {
+    opacity: 1;
+  }
+
+  100% {
+    --sweep: 300deg;
+    opacity: 0;
+  }
+}
+
+@keyframes case-close-in {
+  from {
+    opacity: 0;
+    transform: rotate(-120deg) scale(0.4);
+  }
+}
+
+@keyframes case-rise {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
+
+@keyframes case-pop {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.85);
+    filter: blur(6px);
+  }
+}
+
+@keyframes edge-draw {
+  from {
+    stroke-dashoffset: var(--len);
+  }
 }

@@ -52,13 +52,16 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
 
   type Lap = { el: SVGUseElement; p: SVGPathElement; len: number; dur: number; phase: number; both: boolean; icon: string; turn: boolean };
   const laps: Lap[] = [];
-  d.edges.forEach(([a, b, icon = "file", mode = ""]) => {
+  d.edges.forEach(([a, b, icon = "file", mode = ""], k) => {
     const p = svgEl("path", { d: path(box[a], box[b]), class: `edge${mode === "fix" || mode === "bad" ? ` edge--${mode}` : ""}` });
     gE.append(p);
     if (reduce) return;
     const len = p.getTotalLength();
+    p.style.setProperty("--len", len.toFixed(1)); // for the draw-in on entrance
+    p.style.setProperty("--k", String(k));
     const tone = mode === "both" ? "" : mode;
     const el = glyph(icon, 12, `ico${tone ? ` ico--${tone}` : ""}`);
+    el.style.opacity = "0";
     gFx.append(el);
     laps.push({ el, p, len, dur: Math.min(2200, Math.max(900, len * 7)), phase: Math.random() * 2000, both: mode === "both", icon, turn: icon === "fix" });
   });
@@ -83,6 +86,10 @@ export function renderMini(svg: SVGSVGElement, d: Diagram, reduce: boolean): () 
     }
     raf = requestAnimationFrame(frame);
   };
-  raf = requestAnimationFrame(frame);
-  return () => cancelAnimationFrame(raf);
+  // laps start once the entrance has drawn the links
+  const timer = setTimeout(() => (raf = requestAnimationFrame(frame)), 1300);
+  return () => {
+    clearTimeout(timer);
+    cancelAnimationFrame(raf);
+  };
 }
