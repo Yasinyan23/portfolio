@@ -901,15 +901,6 @@ kbd {
   stroke: rgba(45, 226, 192, 0.6);
 }
 
-.edge--fix {
-  stroke: rgba(255, 181, 71, 0.3);
-  stroke-dasharray: 5 5;
-}
-
-.edge--fix.is-hot {
-  stroke: #ffb547;
-}
-
 .pkt {
   fill: #2de2c0;
   filter: drop-shadow(0 0 6px #2de2c0);
@@ -1854,10 +1845,6 @@ body::before {
   }
 }
 
-.edge--fix {
-  animation: edge-in 0.5s ease both;
-}
-
 @keyframes edge-in {
   from {
     opacity: 0;
@@ -2008,4 +1995,37 @@ body::before {
   .flow::after {
     animation: none;
   }
+}
+
+/* ---------- flow: request stream ---------- */
+
+.flow__hud b.flow-bugs {
+  color: #ff8a84;
+}
+
+.pkt--bad {
+  fill: #ff5f57;
+  filter: drop-shadow(0 0 6px #ff5f57);
+}
+
+.pkt--cache {
+  fill: #ff7ad9;
+  filter: drop-shadow(0 0 6px #ff7ad9);
+}
+
+.ripple--bad {
+  stroke: #ff5f57;
+}
+
+.ripple--cache {
+  stroke: #ff7ad9;
+}
+
+.node.is-note rect {
+  fill: rgba(255, 122, 217, 0.1);
+  stroke: #ff7ad9;
+}
+
+.node.is-note .node__sub {
+  fill: #ff7ad9;
 }

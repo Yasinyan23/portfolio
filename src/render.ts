@@ -77,10 +77,10 @@ export function render(root: HTMLElement): void {
         </div>
         <p class="hero__worked"><span>Worked at</span>${jobs.map((j) => `<b>${esc(j.company)}</b>`).join("")}</p>
       </div>
-      <figure class="flow" data-level="0" aria-label="Animated diagram: the same task run by a junior, mid, senior and staff-level AI agent process; output quality rises from 41% to 97%">
+      <figure class="flow" data-level="0" aria-label="Animated diagram: a stream of requests through junior, mid, senior and staff-level AI agent systems; higher levels add routing, caching, parallel models and quality gates, so fewer bugs reach the output">
         <div class="flow__hud" aria-hidden="true">
-          <span class="flow__live"><i></i><b class="flow-mode">Junior</b> · run <b class="flow-run">#1</b></span>
-          <span>tokens <b class="flow-tokens">0</b> · <b class="flow-cost">$0.00</b></span>
+          <span class="flow__live"><i></i><b class="flow-mode">Junior</b> · req <b class="flow-req">0/10</b></span>
+          <span>↺ <b class="flow-retry">0</b> · ✗ <b class="flow-bugs">0</b> · <b class="flow-cost">$0.00</b></span>
         </div>
         <svg class="flow__svg" viewBox="0 0 480 590" aria-hidden="true"></svg>
         <div class="flow__ladder">
@@ -91,7 +91,7 @@ export function render(root: HTMLElement): void {
             <button type="button" aria-pressed="false">Staff</button>
           </div>
           <div class="flow__quality" aria-hidden="true"><span>quality</span><div class="flow__track"><i class="flow__fill"></i></div><b class="flow-q">—</b></div>
-          <p class="flow__caption" aria-hidden="true">one big prompt · no review · no evals</p>
+          <p class="flow__caption" aria-hidden="true">one big prompt · no checks · no retries</p>
         </div>
       </figure>
     </section>
