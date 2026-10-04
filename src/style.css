@@ -2029,3 +2029,71 @@ body::before {
 .node.is-note .node__sub {
   fill: #ff7ad9;
 }
+
+/* ---------- flow: glyph packets + release path ---------- */
+
+.ico {
+  color: #2de2c0;
+  filter: drop-shadow(0 0 3px currentColor);
+}
+
+.ico--L {
+  color: #9b84ff;
+}
+
+.ico--fix {
+  color: #ffb547;
+}
+
+.ico--bad {
+  color: #ff5f57;
+}
+
+.ico--cache {
+  color: #ff7ad9;
+}
+
+.ico--ops {
+  color: #4cc2ff;
+}
+
+.pkt--ops {
+  fill: #4cc2ff;
+}
+
+.ripple--ops {
+  stroke: #4cc2ff;
+}
+
+.spark--ops {
+  fill: #4cc2ff;
+}
+
+.pod {
+  color: rgba(255, 255, 255, 0.16);
+  transition: color 0.3s;
+}
+
+.pod.is-starting {
+  color: #4cc2ff;
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: spin 0.9s linear infinite;
+}
+
+.pod.is-up {
+  color: #2de2c0;
+  filter: drop-shadow(0 0 3px rgba(45, 226, 192, 0.7));
+}
+
+.pod.is-canary,
+.pod.is-warn {
+  color: #ffb547;
+  filter: drop-shadow(0 0 3px rgba(255, 181, 71, 0.7));
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pod.is-starting {
+    animation: none;
+  }
+}
